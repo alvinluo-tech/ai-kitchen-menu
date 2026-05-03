@@ -31,13 +31,13 @@ async function generateUniqueSlug(supabase: ReturnType<typeof createClient> exte
   let counter = 2;
 
   while (true) {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("dishes")
       .select("id")
       .eq("slug", slug)
-      .single();
+      .maybeSingle();
 
-    if (!data) {
+    if (error || !data) {
       return slug;
     }
 
