@@ -22,6 +22,14 @@ const DishSchema = z.object({
     })
   ),
   tags: z.array(z.string()),
+  attachments: z.array(
+    z.object({
+      title: z.string().optional(),
+      content: z.string().optional(),
+      image_url: z.string().url().optional().or(z.literal("")),
+      is_public: z.boolean().default(false),
+    })
+  ).optional(),
 });
 
 type Props = {
@@ -72,7 +80,7 @@ export async function PUT(request: Request, { params }: Props) {
       );
     }
 
-    const { ingredients, tags, ...dishData } = parsed.data;
+    const { ingredients, tags, attachments, ...dishData } = parsed.data;
 
     const { error: dishError } = await supabase
       .from("dishes")
@@ -88,6 +96,7 @@ export async function PUT(request: Request, { params }: Props) {
 
     await supabase.from("dish_ingredients").delete().eq("dish_id", id);
     await supabase.from("dish_tags").delete().eq("dish_id", id);
+    await supabase.from("dish_attachments").delete().eq("dish_id", id);
 
     for (const ingredient of ingredients) {
       let { data: existingIngredient } = await supabase
@@ -120,6 +129,23 @@ export async function PUT(request: Request, { params }: Props) {
         dish_id: id,
         tag,
       });
+    }
+
+    // 保存附录
+    if (attachments && attachments.length > 0) {
+      for (let i = 0; i < attachments.length; i++) {
+        const attachment = attachments[i];
+        if (attachment.title || attachment.content || attachment.image_url) {
+          await supabase.from("dish_attachments").insert({
+            dish_id: id,
+            title: attachment.title || null,
+            content: attachment.content || null,
+            image_url: attachment.image_url || null,
+            is_public: attachment.is_public,
+            sort_order: i,
+          });
+        }
+      }
     }
 
     return NextResponse.json({ success: true });

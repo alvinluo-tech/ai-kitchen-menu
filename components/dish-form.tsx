@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -66,6 +66,27 @@ export function DishForm({ dish, mode }: DishFormProps) {
   const [assistField, setAssistField] = useState<"description" | "story" | "tags" | null>(null);
   const [editingIngredientIndex, setEditingIngredientIndex] = useState<number | null>(null);
   const [attachments, setAttachments] = useState<FormAttachment[]>([]);
+
+  // 编辑模式下加载已有附录
+  useEffect(() => {
+    if (mode === "edit" && dish?.id) {
+      fetch(`/api/dishes/${dish.id}/attachments`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.attachments) {
+            setAttachments(
+              data.attachments.map((a: any) => ({
+                title: a.title || "",
+                content: a.content || "",
+                image_url: a.image_url || "",
+                is_public: a.is_public,
+              }))
+            );
+          }
+        })
+        .catch(console.error);
+    }
+  }, [mode, dish?.id]);
 
   const {
     register,
@@ -226,7 +247,7 @@ export function DishForm({ dish, mode }: DishFormProps) {
         },
         body: JSON.stringify({
           ...data,
-          attachments: mode === "create" ? attachments : undefined,
+          attachments,
         }),
       });
 

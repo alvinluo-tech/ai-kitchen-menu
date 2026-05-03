@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { DishForm } from "@/components/dish-form";
-import { AttachmentForm } from "@/components/attachment-form";
 import { requireChef } from "@/lib/auth";
 import { getDishById } from "@/lib/dishes/queries";
 
@@ -56,9 +55,6 @@ export default async function EditDishPage({ params }: Props) {
     notFound();
   }
 
-  // 检查是否是菜品所有者
-  const isOwner = dish.created_by === user.id;
-
   return (
     <>
       <SiteHeader />
@@ -73,11 +69,7 @@ export default async function EditDishPage({ params }: Props) {
 
           <h1 className="text-2xl md:text-3xl font-bold mb-6 md:mb-8">编辑 {dish.name}</h1>
 
-          <div className="space-y-6">
-            <DishForm dish={dish} mode="edit" />
-
-            <AttachmentForm dishId={dish.id} isOwner={isOwner} />
-          </div>
+          <DishForm dish={dish} mode="edit" />
         </div>
       </main>
       <SiteFooter />
