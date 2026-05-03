@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Clock, Flame, ChefHat } from "lucide-react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -35,10 +36,12 @@ export function DishCard({
     <Card className="overflow-hidden rounded-2xl shadow-md hover:shadow-lg transition-shadow">
       <div className="aspect-[4/3] relative bg-gradient-to-br from-orange-100 to-amber-50">
         {imageUrl ? (
-          <img
+          <Image
             src={imageUrl}
             alt={name}
-            className="w-full h-full object-cover"
+            fill
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            className="object-cover"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">

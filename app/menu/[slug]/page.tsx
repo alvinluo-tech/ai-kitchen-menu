@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowLeft, Clock, Flame, Users, ChefHat } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -56,10 +57,13 @@ export default async function DishDetailPage({ params }: Props) {
           <div className="bg-white rounded-2xl shadow-md overflow-hidden">
             {dish.image_url ? (
               <div className="aspect-[16/9] relative">
-                <img
+                <Image
                   src={dish.image_url}
                   alt={dish.name}
-                  className="w-full h-full object-cover"
+                  fill
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 1200px"
+                  className="object-cover"
+                  priority
                 />
               </div>
             ) : (
