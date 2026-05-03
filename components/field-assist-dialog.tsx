@@ -127,7 +127,7 @@ export function FieldAssistDialog({
           {currentValue && (
             <div className="space-y-2">
               <Label>操作方式</Label>
-              <Select value={action} onValueChange={(v) => v && setAction(v)}>
+              <Select defaultValue="rewrite" onValueChange={(v) => v && setAction(v)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -161,7 +161,7 @@ export function FieldAssistDialog({
           {field !== "tags" && (
             <div className="space-y-2">
               <Label>语气风格</Label>
-              <Select value={tone} onValueChange={(v) => v && setTone(v)}>
+              <Select defaultValue="friendly" onValueChange={(v) => v && setTone(v)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
