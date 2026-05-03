@@ -12,6 +12,7 @@ const navItems = [
   { href: "/", label: "首页" },
   { href: "/menu", label: "全部菜单" },
   { href: "/recommend", label: "AI 推荐" },
+  { href: "/chefs", label: "厨师风采" },
 ];
 
 export function SiteHeader() {
@@ -78,6 +79,12 @@ export function SiteHeader() {
             <div className="w-20 h-9" />
           ) : isChef ? (
             <div className="flex items-center gap-2">
+              <Link href="/admin/profile">
+                <Button variant="ghost" size="sm" className="gap-1">
+                  <ChefHat className="h-4 w-4" />
+                  个人资料
+                </Button>
+              </Link>
               <Link href="/admin">
                 <Button variant={pathname.startsWith("/admin") ? "default" : "outline"} size="sm" className="gap-1">
                   <LayoutDashboard className="h-4 w-4" />
@@ -134,11 +141,14 @@ export function SiteHeader() {
                   {!loading && (
                     isChef ? (
                       <div className="flex flex-col gap-2">
+                        <Link href="/admin/profile" onClick={() => setOpen(false)}>
+                          <Button variant="outline" className="w-full justify-start gap-2">
+                            <ChefHat className="h-4 w-4" />
+                            个人资料
+                          </Button>
+                        </Link>
                         <Link href="/admin" onClick={() => setOpen(false)}>
-                          <Button
-                            variant={pathname.startsWith("/admin") ? "default" : "outline"}
-                            className="w-full justify-start gap-2"
-                          >
+                          <Button variant={pathname.startsWith("/admin") ? "default" : "outline"} className="w-full justify-start gap-2">
                             <LayoutDashboard className="h-4 w-4" />
                             后台管理
                           </Button>
