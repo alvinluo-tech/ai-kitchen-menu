@@ -78,10 +78,10 @@ export async function POST(request: Request) {
       );
     }
 
-    const { ingredients, tags, ...dishData } = parsed.data;
+    const { ingredients, tags, slug: _, ...dishData } = parsed.data;
 
     // 自动生成 slug
-    const slug = dishData.slug || await generateUniqueSlug(supabase, dishData.name);
+    const slug = _ || await generateUniqueSlug(supabase, dishData.name);
 
     const { data: dish, error: dishError } = await supabase
       .from("dishes")
