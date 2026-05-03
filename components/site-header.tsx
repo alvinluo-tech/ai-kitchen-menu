@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { ChefHat, Menu } from "lucide-react";
-import { useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { ChefHat, Menu, LayoutDashboard, LogOut } from "lucide-react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { createClient } from "@/lib/supabase/client";
 
 const navItems = [
   { href: "/", label: "首页" },
@@ -15,7 +16,38 @@ const navItems = [
 
 export function SiteHeader() {
   const pathname = usePathname();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [isChef, setIsChef] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", user.id)
+          .single();
+
+        setIsChef(profile?.role === "chef");
+      }
+      setLoading(false);
+    };
+
+    checkAuth();
+  }, []);
+
+  const handleLogout = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    setIsChef(false);
+    router.push("/");
+    router.refresh();
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-white/80 backdrop-blur-sm">
@@ -39,11 +71,28 @@ export function SiteHeader() {
               {item.label}
             </Link>
           ))}
-          <Link href="/login">
-            <Button variant="ghost" size="sm" className="text-gray-500">
-              厨师入口
-            </Button>
-          </Link>
+
+          {loading ? (
+            <div className="w-20 h-9" />
+          ) : isChef ? (
+            <div className="flex items-center gap-2">
+              <Link href="/admin">
+                <Button variant={pathname.startsWith("/admin") ? "default" : "outline"} size="sm" className="gap-1">
+                  <LayoutDashboard className="h-4 w-4" />
+                  后台管理
+                </Button>
+              </Link>
+              <Button variant="ghost" size="sm" onClick={handleLogout}>
+                <LogOut className="h-4 w-4" />
+              </Button>
+            </div>
+          ) : (
+            <Link href="/login">
+              <Button variant="ghost" size="sm" className="text-gray-500">
+                厨师入口
+              </Button>
+            </Link>
+          )}
         </nav>
 
         <Sheet open={open} onOpenChange={setOpen}>
@@ -66,11 +115,29 @@ export function SiteHeader() {
                   {item.label}
                 </Link>
               ))}
-              <Link href="/login" onClick={() => setOpen(false)}>
-                <Button variant="ghost" className="w-full text-gray-500">
-                  厨师入口
-                </Button>
-              </Link>
+
+              {!loading && (
+                isChef ? (
+                  <div className="flex flex-col gap-2 mt-4">
+                    <Link href="/admin" onClick={() => setOpen(false)}>
+                      <Button variant={pathname.startsWith("/admin") ? "default" : "outline"} className="w-full gap-2">
+                        <LayoutDashboard className="h-4 w-4" />
+                        后台管理
+                      </Button>
+                    </Link>
+                    <Button variant="ghost" className="w-full text-gray-500" onClick={() => { handleLogout(); setOpen(false); }}>
+                      <LogOut className="h-4 w-4 mr-2" />
+                      退出登录
+                    </Button>
+                  </div>
+                ) : (
+                  <Link href="/login" onClick={() => setOpen(false)}>
+                    <Button variant="ghost" className="w-full text-gray-500">
+                      厨师入口
+                    </Button>
+                  </Link>
+                )
+              )}
             </div>
           </SheetContent>
         </Sheet>

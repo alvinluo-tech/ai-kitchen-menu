@@ -1,53 +1,79 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Loader2, Mail, ChefHat } from "lucide-react";
+import { useState } from "react";
+import { Loader2, Mail, ChefHat, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
-import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [supabase, setSupabase] = useState<ReturnType<typeof createClient> | null>(null);
-
-  useEffect(() => {
-    setSupabase(createClient());
-  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!supabase) return;
-    
     setLoading(true);
     setError(null);
-    setMessage(null);
 
     try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-        },
+      const response = await fetch("/api/auth/magic-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
       });
 
-      if (error) {
-        setError(error.message);
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || "发送失败，请稍后再试");
         return;
       }
 
-      setMessage("请检查你的邮箱，点击登录链接完成登录。");
+      setSent(true);
     } catch {
-      setError("登录失败，请稍后再试。");
+      setError("发送失败，请稍后再试");
     } finally {
       setLoading(false);
     }
   };
+
+  if (sent) {
+    return (
+      <>
+        <SiteHeader />
+        <main className="flex-1 flex items-center justify-center py-12">
+          <Card className="w-full max-w-md mx-4">
+            <CardContent className="pt-6">
+              <div className="flex flex-col items-center text-center">
+                <CheckCircle className="h-12 w-12 text-green-500 mb-4" />
+                <h2 className="text-xl font-bold mb-2">邮件已发送</h2>
+                <p className="text-gray-600 mb-4">
+                  登录链接已发送到 <span className="font-medium">{email}</span>
+                </p>
+                <p className="text-sm text-gray-500 mb-6">
+                  请检查你的邮箱，点击链接完成登录
+                </p>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setSent(false);
+                    setEmail("");
+                  }}
+                >
+                  使用其他邮箱
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </main>
+        <SiteFooter />
+      </>
+    );
+  }
 
   return (
     <>
@@ -80,10 +106,6 @@ export default function LoginPage() {
 
               {error && (
                 <p className="text-sm text-red-600">{error}</p>
-              )}
-
-              {message && (
-                <p className="text-sm text-green-600">{message}</p>
               )}
 
               <Button type="submit" className="w-full gap-2" disabled={loading}>
