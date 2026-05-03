@@ -1,12 +1,9 @@
 import { generateText } from "ai";
 import { z } from "zod";
-import {
-  UserPreferenceSchema,
-  RecommendationSchema,
-} from "@/lib/ai/schemas";
+import { RecommendationSchema } from "@/lib/ai/schemas";
 import { getAvailableDishes } from "@/lib/dishes/queries";
-import { getCandidateDishes } from "@/lib/dishes/scoring";
 import { getAIProvider } from "@/lib/ai/provider";
+import type { Dish } from "@/lib/dishes/types";
 
 function extractJson(text: string) {
   const match = text.match(/```json\s*([\s\S]*?)```/);
@@ -19,136 +16,210 @@ function extractJson(text: string) {
   return text.trim();
 }
 
+/**
+ * Local scoring: lightweight heuristic to narrow down candidates.
+ * No LLM involved — just deterministic matching.
+ */
+function localScore(
+  dish: {
+    tags: string[];
+    ingredients: string[];
+    spiceLevel: number;
+    cookingTime: number | null;
+    avoidIngredients: string[];
+    preferredFlavors: string[];
+    userIngredients: string[];
+    maxCookingTime: number | null;
+    preferredSpiceLevel: number | null;
+  },
+) {
+  const { tags, ingredients, spiceLevel, cookingTime, avoidIngredients, preferredFlavors, userIngredients, maxCookingTime, preferredSpiceLevel } = dish;
+
+  // Hard-exclude: avoided ingredient
+  if (avoidIngredients.length > 0 && ingredients.length > 0) {
+    const hasAvoid = avoidIngredients.some((a) =>
+      ingredients.some((i) => i.includes(a) || a.includes(i))
+    );
+    if (hasAvoid) return { score: 0, matched: [] as string[], missing: [] as string[], excluded: true };
+  }
+
+  // Matched user ingredients
+  const matched = userIngredients.filter((u) =>
+    ingredients.some((i) => i.includes(u) || u.includes(i))
+  );
+
+  // Missing required ingredients (all ingredients assumed required for simplicity)
+  const missing = ingredients.filter((i) =>
+    !userIngredients.some((u) => i.includes(u) || u.includes(i))
+  );
+
+  // Ingredient score
+  const ingredientScore = userIngredients.length > 0
+    ? matched.length / userIngredients.length
+    : 0.3;
+
+  // Flavor score
+  const flavorMatches = preferredFlavors.filter((f) =>
+    tags.some((t) => t.includes(f) || f.includes(t))
+  );
+  const flavorScore = preferredFlavors.length > 0
+    ? flavorMatches.length / preferredFlavors.length
+    : 0.3;
+
+  // Time score
+  let timeScore = 0.5;
+  if (maxCookingTime && cookingTime) {
+    timeScore = cookingTime <= maxCookingTime
+      ? 1
+      : Math.max(0, 1 - (cookingTime - maxCookingTime) / 60);
+  }
+
+  // Spice score
+  let spiceScore = 0.5;
+  if (preferredSpiceLevel !== null && preferredSpiceLevel !== undefined) {
+    const diff = Math.abs(spiceLevel - preferredSpiceLevel);
+    spiceScore = Math.max(0, 1 - diff / 5);
+  }
+
+  const rawScore = ingredientScore * 0.4 + flavorScore * 0.3 + timeScore * 0.15 + spiceScore * 0.15;
+
+  return { score: Math.round(rawScore * 100), matched, missing, excluded: false };
+}
+
+/**
+ * Quick keyword extraction from natural language.
+ * No LLM — just regex-based heuristics to pull out flavors, ingredients, and constraints.
+ */
+function quickParseInput(message: string) {
+  const text = message.toLowerCase();
+
+  // Common flavor keywords
+  const flavorPatterns = ["辣", "酸", "甜", "咸", "鲜", "麻", "清淡", "下饭", "重口", "微辣", "中辣", "特辣"];
+  const flavors = flavorPatterns.filter((f) => text.includes(f));
+
+  // Common ingredient keywords (non-exhaustive, just common ones)
+  const ingredientPatterns = [
+    "鸡蛋", "土豆", "牛肉", "猪肉", "鸡肉", "鱼", "虾", "豆腐", "番茄", "西红柿",
+    "青椒", "茄子", "白菜", "菠菜", "芹菜", "洋葱", "大蒜", "生姜", "米饭", "面条",
+    "排骨", "羊肉", "鸭", "蘑菇", "木耳", "胡萝卜", "黄瓜", "南瓜", "玉米", "花生",
+  ];
+  const availableIngredients = ingredientPatterns.filter((i) => text.includes(i));
+
+  // Avoid ingredients
+  const avoidIngredients: string[] = [];
+  if (text.includes("不吃肉") || text.includes("不要肉")) avoidIngredients.push("肉");
+  if (text.includes("不吃辣") || text.includes("不要辣")) { avoidIngredients.push("辣"); }
+  if (text.includes("不吃海鲜")) avoidIngredients.push("海鲜");
+  if (text.includes("不吃鸡蛋")) avoidIngredients.push("鸡蛋");
+
+  // Cooking time
+  let maxCookingTime: number | null = null;
+  const timeMatch = text.match(/(\d+)\s*(?:分钟|分钟以内|分)/);
+  if (timeMatch) maxCookingTime = parseInt(timeMatch[1]);
+
+  // Spice level
+  let preferredSpiceLevel: number | null = null;
+  if (text.includes("特辣")) preferredSpiceLevel = 5;
+  else if (text.includes("中辣")) preferredSpiceLevel = 3;
+  else if (text.includes("微辣") || text.includes("一点辣")) preferredSpiceLevel = 2;
+  else if (text.includes("辣")) preferredSpiceLevel = 3;
+
+  return { flavors, availableIngredients, avoidIngredients, maxCookingTime, preferredSpiceLevel };
+}
+
 export async function recommendDishesFromMessage(message: string) {
   const { model } = getAIProvider();
 
-  const { text: preferenceText } = await generateText({
-    model,
-    system: `
-你是一个菜品偏好解析助手。
-你的任务是从用户自然语言中提取偏好，输出 JSON。
+  // Step 1: Quick local parse (no LLM)
+  const parsed = quickParseInput(message);
 
-必须输出以下格式的 JSON（不要输出其他内容）：
-{
-  "flavors": ["想吃的风味，如辣、酸、甜"],
-  "availableIngredients": ["家里有的食材"],
-  "avoidIngredients": ["忌口食材"],
-  "avoidStyles": ["不喜欢的风格"],
-  "maxCookingTime": null或数字（分钟）,
-  "preferredSpiceLevel": null或0到5的数字,
-  "peopleCount": null或数字,
-  "mood": null或字符串
-}
+  // Step 2: Fetch all dishes and score locally
+  const dishes: Dish[] = await getAvailableDishes();
 
-规则：
-- 不要编造用户没有表达的信息
-- 如果不确定，使用空数组或 null
-- 只输出 JSON，不要输出其他内容
-`,
-    prompt: message,
-  });
+  const scored = dishes
+    .map((dish) => {
+      const dishIngredients = dish.dish_ingredients?.map((i) => i.ingredients.name) ?? [];
+      const dishTags = dish.dish_tags?.map((t) => t.tag) ?? [];
 
-  let preference;
-  try {
-    const jsonStr = extractJson(preferenceText);
-    preference = UserPreferenceSchema.parse(JSON.parse(jsonStr));
-  } catch {
-    preference = UserPreferenceSchema.parse({});
-  }
+      const result = localScore({
+        tags: dishTags,
+        ingredients: dishIngredients,
+        spiceLevel: dish.spice_level,
+        cookingTime: dish.cooking_time_minutes ?? null,
+        avoidIngredients: parsed.avoidIngredients,
+        preferredFlavors: parsed.flavors,
+        userIngredients: parsed.availableIngredients,
+        maxCookingTime: parsed.maxCookingTime,
+        preferredSpiceLevel: parsed.preferredSpiceLevel,
+      });
 
-  const dishes = await getAvailableDishes();
-  const candidates = getCandidateDishes(dishes, preference);
+      return { dish, ...result };
+    })
+    .filter((item) => !item.excluded && item.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 6);
 
-  if (candidates.length === 0) {
+  if (scored.length === 0) {
     return {
       summary: "暂时没有找到特别匹配的菜品。你可以换一种口味描述，或者让朋友再上传几道菜。",
       recommendations: [],
     };
   }
 
-  const candidatePayload = candidates.map((item) => ({
-    dishId: item.dish.id,
+  // Step 3: Single LLM call — preference understanding + recommendation
+  const candidatePayload = scored.map((item) => ({
+    id: item.dish.id,
     name: item.dish.name,
-    description: item.dish.description,
-    cuisine: item.dish.cuisine,
-    spiceLevel: item.dish.spice_level,
-    cookingTimeMinutes: item.dish.cooking_time_minutes,
-    tags: item.dish.dish_tags?.map((tag) => tag.tag) ?? [],
-    ingredients:
-      item.dish.dish_ingredients?.map((ingredient) => ({
-        name: ingredient.ingredients.name,
-        amount: ingredient.amount,
-        isRequired: ingredient.is_required,
-      })) ?? [],
-    baseScore: item.score,
-    matchedIngredients: item.matchedIngredients,
-    missingIngredients: item.missingIngredients,
+    desc: item.dish.description,
+    tags: item.dish.dish_tags?.map((t) => t.tag) ?? [],
+    spice: item.dish.spice_level,
+    time: item.dish.cooking_time_minutes,
+    ingredients: item.dish.dish_ingredients?.map((i) => i.ingredients.name) ?? [],
+    score: item.score,
+    matched: item.matched,
+    missing: item.missing,
   }));
 
-  const allowedDishIds = candidatePayload.map((dish) => dish.dishId);
+  const allowedIds = candidatePayload.map((d) => d.id);
 
-  const { text: recommendationText } = await generateText({
+  const { text } = await generateText({
     model,
-    system: `
-你是一个温柔、自然、有朋友感的 AI 私厨菜单推荐助手。
+    system: `你是一个有朋友感的 AI 私厨菜单推荐助手。
 
-重要规则：
-1. 你只能从候选菜品中推荐。
-2. 你不能编造菜品。
-3. 你不能输出候选菜品以外的 dishId。
-4. 推荐理由必须具体说明为什么适合用户。
-5. 推荐理由要结合用户现有食材、想吃的风味、忌口、烹饪时间和辣度。
-6. 输出最多 5 道菜。
-7. 如果匹配度一般，也要诚实说明。
-8. 语气要自然，像朋友帮忙推荐，不要像外卖广告。
+规则：
+1. 只从候选菜品中推荐，不要编造。
+2. 输出的 dishId 必须在允许列表中。
+3. 推荐理由要具体，说明为什么适合用户。
+4. 最多推荐 5 道。
+5. 语气自然，像朋友推荐，不要像广告。
 
-允许推荐的 dishId：
-${allowedDishIds.join(", ")}
+允许的 dishId：${allowedIds.join(", ")}
 
-输出格式（只输出 JSON）：
+输出 JSON：
 {
   "recommendations": [
-    {
-      "dishId": "菜品ID",
-      "score": 85,
-      "reason": "推荐理由",
-      "matchedIngredients": ["匹配的食材"],
-      "missingIngredients": ["缺少的食材"]
-    }
+    { "dishId": "...", "score": 85, "reason": "...", "matchedIngredients": [...], "missingIngredients": [...] }
   ],
   "summary": "整体推荐总结"
-}
-`,
-    prompt: `
-用户原始描述：
-${message}
-
-解析后的用户偏好：
-${JSON.stringify(preference, null, 2)}
+}`,
+    prompt: `用户说：${message}
 
 候选菜品：
 ${JSON.stringify(candidatePayload, null, 2)}
 
-请从候选菜品中选择最合适的 3 到 5 道，输出 JSON。
-`,
+请选择最合适的 3-5 道，输出 JSON。`,
   });
 
   try {
-    const jsonStr = extractJson(recommendationText);
+    const jsonStr = extractJson(text);
     const output = RecommendationSchema.parse(JSON.parse(jsonStr));
 
-    const safeRecommendations = output.recommendations
-      .filter((item) => allowedDishIds.includes(item.dishId))
+    const safe = output.recommendations
+      .filter((r) => allowedIds.includes(r.dishId))
       .sort((a, b) => b.score - a.score);
 
-    return {
-      summary: output.summary,
-      recommendations: safeRecommendations,
-    };
+    return { summary: output.summary, recommendations: safe };
   } catch {
-    return {
-      summary: "推荐分析完成，但结果解析失败，请重试。",
-      recommendations: [],
-    };
+    return { summary: "推荐分析完成，但结果解析失败，请重试。", recommendations: [] };
   }
 }

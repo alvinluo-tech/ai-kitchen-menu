@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -39,11 +39,27 @@ type ApiResponse = {
   error?: string;
 };
 
+const CACHE_KEY = "ai-recommend-result";
+const CACHE_MSG_KEY = "ai-recommend-message";
+
 export function AiRecommendForm() {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ApiResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      const cached = sessionStorage.getItem(CACHE_KEY);
+      const cachedMsg = sessionStorage.getItem(CACHE_MSG_KEY);
+      if (cached) {
+        setResult(JSON.parse(cached));
+      }
+      if (cachedMsg) {
+        setMessage(cachedMsg);
+      }
+    } catch {}
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,6 +90,10 @@ export function AiRecommendForm() {
       }
 
       setResult(data);
+      try {
+        sessionStorage.setItem(CACHE_KEY, JSON.stringify(data));
+        sessionStorage.setItem(CACHE_MSG_KEY, message.trim());
+      } catch {}
     } catch {
       setError("AI 推荐暂时失败，请稍后再试。");
     } finally {
