@@ -39,31 +39,31 @@ async function getChefProfiles(): Promise<ChefProfile[]> {
     return [];
   }
 
-  const chefsWithDetails = await Promise.all(
-    profiles.map(async (profile) => {
-      const { count } = await supabase
-        .from("dishes")
-        .select("*", { count: "exact", head: true })
-        .eq("created_by", profile.id)
-        .eq("is_available", true);
+  // Optimized: fetch ALL available dishes for these chefs in ONE query
+  const chefIds = profiles.map((p) => p.id);
+  const { data: allDishes } = await supabase
+    .from("dishes")
+    .select("id, name, slug, image_url, description, created_by, created_at")
+    .eq("is_available", true)
+    .in("created_by", chefIds)
+    .order("created_at", { ascending: false });
 
-      const { data: dishes } = await supabase
-        .from("dishes")
-        .select("id, name, slug, image_url, description")
-        .eq("created_by", profile.id)
-        .eq("is_available", true)
-        .order("created_at", { ascending: false })
-        .limit(4);
+  // Group dishes by chef ID
+  const dishesByChef = new Map<string, typeof allDishes>();
+  for (const dish of allDishes ?? []) {
+    const list = dishesByChef.get(dish.created_by) ?? [];
+    list.push(dish);
+    dishesByChef.set(dish.created_by, list);
+  }
 
-      return {
-        ...profile,
-        dish_count: count ?? 0,
-        dishes: dishes ?? [],
-      };
-    })
-  );
-
-  return chefsWithDetails;
+  return profiles.map((profile) => {
+    const chefDishes = dishesByChef.get(profile.id) ?? [];
+    return {
+      ...profile,
+      dish_count: chefDishes.length,
+      dishes: chefDishes.slice(0, 4),
+    };
+  });
 }
 
 export default async function ChefsPage() {

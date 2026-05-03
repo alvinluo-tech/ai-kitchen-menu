@@ -5,30 +5,23 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2, Plus, X, Pencil } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { ImageUploader } from "@/components/image-uploader";
 import { AiAssistForm } from "@/components/ai-assist-form";
 import { MagicWandButton } from "@/components/magic-wand-button";
 import { FieldAssistDialog } from "@/components/field-assist-dialog";
 import { AttachmentForm, type FormAttachment } from "@/components/attachment-form";
+import { DishBasicInfo } from "@/components/dish-form/dish-basic-info";
+import { DishAttributes } from "@/components/dish-form/dish-attributes";
+import { DishIngredients } from "@/components/dish-form/dish-ingredients";
+import { DishTags } from "@/components/dish-form/dish-tags";
 import type { Dish } from "@/lib/dishes/types";
 import type { DishDraft } from "@/lib/ai/dish-draft-schema";
 import slugify from "slugify";
 
-const dishSchema = z.object({
+export const dishSchema = z.object({
   name: z.string().min(1, "请输入菜名"),
   slug: z.string().optional(),
   description: z.string().min(1, "请输入描述"),
@@ -72,7 +65,6 @@ export function DishForm({ dish, mode }: DishFormProps) {
     is_public: false,
   });
 
-  // 编辑模式下加载已有附录
   useEffect(() => {
     if (mode === "edit" && dish?.id) {
       fetch(`/api/dishes/${dish.id}/attachments`)
@@ -127,16 +119,13 @@ export function DishForm({ dish, mode }: DishFormProps) {
   const imageUrl = watch("image_url");
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setValue("name", value);
+    setValue("name", e.target.value);
   };
 
   const addIngredient = () => {
     if (ingredientInput.trim()) {
       const currentIngredients = watch("ingredients");
-
       if (editingIngredientIndex !== null) {
-        // 编辑模式
         const updated = [...currentIngredients];
         updated[editingIngredientIndex] = {
           name: ingredientInput.trim(),
@@ -146,25 +135,18 @@ export function DishForm({ dish, mode }: DishFormProps) {
         setValue("ingredients", updated);
         setEditingIngredientIndex(null);
       } else {
-        // 新增模式
         setValue("ingredients", [
           ...currentIngredients,
-          {
-            name: ingredientInput.trim(),
-            amount: amountInput.trim() || undefined,
-            is_required: true,
-          },
+          { name: ingredientInput.trim(), amount: amountInput.trim() || undefined, is_required: true },
         ]);
       }
-
       setIngredientInput("");
       setAmountInput("");
     }
   };
 
   const editIngredient = (index: number) => {
-    const currentIngredients = watch("ingredients");
-    const item = currentIngredients[index];
+    const item = watch("ingredients")[index];
     setIngredientInput(item.name);
     setAmountInput(item.amount || "");
     setEditingIngredientIndex(index);
@@ -177,14 +159,9 @@ export function DishForm({ dish, mode }: DishFormProps) {
   };
 
   const removeIngredient = (index: number) => {
-    const currentIngredients = watch("ingredients");
-    setValue(
-      "ingredients",
-      currentIngredients.filter((_, i) => i !== index)
-    );
-    if (editingIngredientIndex === index) {
-      cancelEditIngredient();
-    }
+    const current = watch("ingredients");
+    setValue("ingredients", current.filter((_, i) => i !== index));
+    if (editingIngredientIndex === index) cancelEditIngredient();
   };
 
   const addTag = () => {
@@ -195,10 +172,7 @@ export function DishForm({ dish, mode }: DishFormProps) {
   };
 
   const removeTag = (tag: string) => {
-    setValue(
-      "tags",
-      tags.filter((t) => t !== tag)
-    );
+    setValue("tags", tags.filter((t) => t !== tag));
   };
 
   const handleDraftGenerated = (draft: DishDraft) => {
@@ -211,14 +185,9 @@ export function DishForm({ dish, mode }: DishFormProps) {
     setValue("difficulty", draft.difficulty);
     setValue("cooking_time_minutes", draft.cooking_time_minutes);
     setValue("servings", draft.servings);
-    setValue(
-      "ingredients",
-      draft.ingredients.map((item) => ({
-        name: item.name,
-        amount: item.amount || "",
-        is_required: item.is_required,
-      }))
-    );
+    setValue("ingredients", draft.ingredients.map((item) => ({
+      name: item.name, amount: item.amount || "", is_required: item.is_required,
+    })));
     setValue("tags", draft.tags);
   };
 
@@ -239,35 +208,41 @@ export function DishForm({ dish, mode }: DishFormProps) {
 
   const onSubmit = async (data: DishFormData) => {
     setLoading(true);
-
     try {
       const url = mode === "create" ? "/api/dishes" : `/api/dishes/${dish?.id}`;
       const method = mode === "create" ? "POST" : "PUT";
 
       const response = await fetch(url, {
         method,
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...data,
           attachment: attachment.title || attachment.content || attachment.image_urls.length > 0
-            ? {
-                title: attachment.title,
-                content: attachment.content,
-                image_urls: attachment.image_urls,
-                is_public: attachment.is_public,
-              }
+            ? { title: attachment.title, content: attachment.content, image_urls: attachment.image_urls, is_public: attachment.is_public }
             : null,
         }),
       });
 
       if (response.ok) {
+        if (mode === "create") {
+          try {
+            sessionStorage.setItem("ai-kitchen-menu:optimistic-dish", JSON.stringify({
+              id: "pending", name: data.name,
+              slug: slugify(data.name, { lower: true, strict: true }),
+              description: data.description, image_url: data.image_url || null,
+              is_available: data.is_available, createdAt: Date.now(),
+            }));
+          } catch {}
+        }
+        const { toast } = await import("sonner");
+        toast.success(mode === "create" ? "菜品创建成功" : "菜品更新成功");
         router.push("/admin");
         router.refresh();
       }
     } catch (error) {
       console.error("Failed to save dish:", error);
+      const { toast } = await import("sonner");
+      toast.error("保存失败，请重试");
     } finally {
       setLoading(false);
     }
@@ -285,79 +260,26 @@ export function DishForm({ dish, mode }: DishFormProps) {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label>菜品图片</Label>
+            <div className="text-sm font-medium">菜品图片</div>
             {imageUrl ? (
               <div className="relative">
-                <img
-                  src={imageUrl}
-                  alt="菜品图片"
-                  className="w-full h-48 object-cover rounded-lg"
-                />
-                <Button
-                  type="button"
-                  variant="destructive"
-                  size="icon"
-                  className="absolute top-2 right-2"
-                  onClick={() => setValue("image_url", "")}
-                >
-                  <X className="h-4 w-4" />
+                <img src={imageUrl} alt="菜品图片" className="w-full h-48 object-cover rounded-lg" />
+                <Button type="button" variant="destructive" size="icon" className="absolute top-2 right-2" onClick={() => setValue("image_url", "")}>
+                  <span className="sr-only">删除</span>×
                 </Button>
               </div>
             ) : (
-              <ImageUploader
-                onUpload={(url) => setValue("image_url", url)}
-                disabled={loading}
-              />
+              <ImageUploader onUpload={(url) => setValue("image_url", url)} disabled={loading} />
             )}
           </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="name">菜名 *</Label>
-            <Input
-              id="name"
-              {...register("name")}
-              onChange={handleNameChange}
-              placeholder="例如：番茄炒蛋"
-            />
-            {errors.name && (
-              <p className="text-sm text-red-600">{errors.name.message}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Label htmlFor="description">描述 *</Label>
-              <MagicWandButton
-                onClick={() => setAssistField("description")}
-                disabled={loading}
-              />
-            </div>
-            <Textarea
-              id="description"
-              {...register("description")}
-              placeholder="简单描述这道菜"
-            />
-            {errors.description && (
-              <p className="text-sm text-red-600">
-                {errors.description.message}
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Label htmlFor="story">朋友的一句话</Label>
-              <MagicWandButton
-                onClick={() => setAssistField("story")}
-                disabled={loading}
-              />
-            </div>
-            <Textarea
-              id="story"
-              {...register("story")}
-              placeholder="这道菜背后有什么故事？"
-            />
-          </div>
+          <DishBasicInfo
+            register={register}
+            errors={errors}
+            onNameChange={handleNameChange}
+            onAssistDescription={() => setAssistField("description")}
+            onAssistStory={() => setAssistField("story")}
+            loading={loading}
+          />
         </CardContent>
       </Card>
 
@@ -365,85 +287,8 @@ export function DishForm({ dish, mode }: DishFormProps) {
         <CardHeader>
           <CardTitle>菜品属性</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="cuisine">菜系</Label>
-              <Input
-                id="cuisine"
-                {...register("cuisine")}
-                placeholder="例如：家常"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="difficulty">难度</Label>
-              <Select
-                defaultValue={dish?.difficulty ?? "easy"}
-                onValueChange={(value) =>
-                  setValue("difficulty", value as "easy" | "medium" | "hard")
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="easy">简单</SelectItem>
-                  <SelectItem value="medium">中等</SelectItem>
-                  <SelectItem value="hard">困难</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="spice_level">辣度 (0-5)</Label>
-              <Input
-                id="spice_level"
-                type="number"
-                min="0"
-                max="5"
-                {...register("spice_level", { valueAsNumber: true })}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="cooking_time_minutes">烹饪时间(分钟)</Label>
-              <Input
-                id="cooking_time_minutes"
-                type="number"
-                min="1"
-                {...register("cooking_time_minutes", {
-                  valueAsNumber: true,
-                  setValueAs: (v) => (v === "" ? null : Number(v)),
-                })}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="servings">适合人数</Label>
-              <Input
-                id="servings"
-                type="number"
-                min="1"
-                {...register("servings", {
-                  valueAsNumber: true,
-                  setValueAs: (v) => (v === "" ? null : Number(v)),
-                })}
-              />
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="is_available"
-              {...register("is_available")}
-              className="rounded"
-            />
-            <Label htmlFor="is_available">上架</Label>
-          </div>
+        <CardContent>
+          <DishAttributes register={register} setValue={setValue} difficulty={dish?.difficulty} />
         </CardContent>
       </Card>
 
@@ -451,65 +296,19 @@ export function DishForm({ dish, mode }: DishFormProps) {
         <CardHeader>
           <CardTitle>食材</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex gap-2">
-            <Input
-              value={ingredientInput}
-              onChange={(e) => setIngredientInput(e.target.value)}
-              placeholder="食材名称"
-              className="flex-1"
-            />
-            <Input
-              value={amountInput}
-              onChange={(e) => setAmountInput(e.target.value)}
-              placeholder="用量 (可选)"
-              className="w-32"
-            />
-            <Button type="button" variant="outline" onClick={addIngredient}>
-              {editingIngredientIndex !== null ? "更新" : <Plus className="h-4 w-4" />}
-            </Button>
-            {editingIngredientIndex !== null && (
-              <Button type="button" variant="ghost" onClick={cancelEditIngredient}>
-                取消
-              </Button>
-            )}
-          </div>
-
-          {ingredients.length > 0 && (
-            <div className="space-y-2">
-              {ingredients.map((item, index) => (
-                <div
-                  key={index}
-                  className={`flex items-center gap-2 p-2 rounded ${
-                    editingIngredientIndex === index
-                      ? "bg-orange-50 border border-orange-200"
-                      : "bg-gray-50"
-                  }`}
-                >
-                  <span className="flex-1">{item.name}</span>
-                  {item.amount && (
-                    <span className="text-sm text-gray-500">{item.amount}</span>
-                  )}
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => editIngredient(index)}
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => removeIngredient(index)}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          )}
+        <CardContent>
+          <DishIngredients
+            ingredients={ingredients}
+            ingredientInput={ingredientInput}
+            amountInput={amountInput}
+            editingIndex={editingIngredientIndex}
+            onIngredientInputChange={setIngredientInput}
+            onAmountInputChange={setAmountInput}
+            onAdd={addIngredient}
+            onEdit={editIngredient}
+            onCancelEdit={cancelEditIngredient}
+            onRemove={removeIngredient}
+          />
         </CardContent>
       </Card>
 
@@ -517,49 +316,17 @@ export function DishForm({ dish, mode }: DishFormProps) {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>标签</CardTitle>
-            <MagicWandButton
-              onClick={() => setAssistField("tags")}
-              disabled={loading}
-            />
+            <MagicWandButton onClick={() => setAssistField("tags")} disabled={loading} />
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex gap-2">
-            <Input
-              value={tagInput}
-              onChange={(e) => setTagInput(e.target.value)}
-              placeholder="例如：下饭、快手"
-              className="flex-1"
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  addTag();
-                }
-              }}
-            />
-            <Button type="button" variant="outline" onClick={addTag}>
-              <Plus className="h-4 w-4" />
-            </Button>
-          </div>
-
-          {tags.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {tags.map((tag) => (
-                <Badge key={tag} variant="secondary" className="gap-1">
-                  {tag}
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="h-4 w-4 p-0"
-                    onClick={() => removeTag(tag)}
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
-                </Badge>
-              ))}
-            </div>
-          )}
+        <CardContent>
+          <DishTags
+            tags={tags}
+            tagInput={tagInput}
+            onTagInputChange={setTagInput}
+            onAdd={addTag}
+            onRemove={removeTag}
+          />
         </CardContent>
       </Card>
 
@@ -568,33 +335,17 @@ export function DishForm({ dish, mode }: DishFormProps) {
           <CardTitle className="text-lg">附录</CardTitle>
         </CardHeader>
         <CardContent>
-          <AttachmentForm
-            attachment={attachment}
-            onChange={setAttachment}
-            disabled={loading}
-          />
+          <AttachmentForm attachment={attachment} onChange={setAttachment} disabled={loading} />
         </CardContent>
       </Card>
 
       <div className="flex gap-4">
         <Button type="submit" disabled={loading}>
           {loading ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              保存中...
-            </>
-          ) : mode === "create" ? (
-            "创建菜品"
-          ) : (
-            "保存修改"
-          )}
+            <><Loader2 className="h-4 w-4 animate-spin mr-2" />保存中...</>
+          ) : mode === "create" ? "创建菜品" : "保存修改"}
         </Button>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => router.back()}
-          disabled={loading}
-        >
+        <Button type="button" variant="outline" onClick={() => router.back()} disabled={loading}>
           取消
         </Button>
       </div>

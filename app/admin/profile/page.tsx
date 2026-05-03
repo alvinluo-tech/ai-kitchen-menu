@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useOptimistic } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Save, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -38,8 +38,6 @@ export default function ProfileEditPage() {
   const [yearsOfCooking, setYearsOfCooking] = useState<number | "">("");
   const [showOnShowcase, setShowOnShowcase] = useState(false);
   const [socialLink, setSocialLink] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -86,15 +84,31 @@ export default function ProfileEditPage() {
 
   const handleSave = async () => {
     setSaving(true);
-    setError(null);
-    setSuccess(null);
+
+    // Optimistic: snapshot current values for rollback
+    const prevProfile = profile ? { ...profile } : null;
+
+    // Optimistically update local profile state
+    if (profile) {
+      setProfile({
+        ...profile,
+        display_name: displayName || null,
+        avatar_url: avatarUrl || null,
+        bio: bio || null,
+        specialties: specialties.length > 0 ? specialties : null,
+        years_of_cooking: yearsOfCooking || null,
+        show_on_showcase: showOnShowcase,
+        social_link: socialLink || null,
+      });
+    }
 
     try {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
 
       if (!user) {
-        setError("未登录");
+        const { toast } = await import("sonner");
+        toast.error("未登录");
         return;
       }
 
@@ -112,14 +126,20 @@ export default function ProfileEditPage() {
         .eq("id", user.id);
 
       if (updateError) {
-        setError(updateError.message);
+        // Rollback
+        if (prevProfile) setProfile(prevProfile);
+        const { toast } = await import("sonner");
+        toast.error(updateError.message);
         return;
       }
 
-      setSuccess("保存成功");
-      setTimeout(() => setSuccess(null), 2000);
+      const { toast } = await import("sonner");
+      toast.success("保存成功");
     } catch {
-      setError("保存失败，请稍后再试");
+      // Rollback
+      if (prevProfile) setProfile(prevProfile);
+      const { toast } = await import("sonner");
+      toast.error("保存失败，请稍后再试");
     } finally {
       setSaving(false);
     }
@@ -290,14 +310,6 @@ export default function ProfileEditPage() {
                 </p>
               </CardContent>
             </Card>
-
-            {error && (
-              <p className="text-sm text-red-600">{error}</p>
-            )}
-
-            {success && (
-              <p className="text-sm text-green-600">{success}</p>
-            )}
 
             <Button onClick={handleSave} disabled={saving} className="w-full gap-2">
               {saving ? (

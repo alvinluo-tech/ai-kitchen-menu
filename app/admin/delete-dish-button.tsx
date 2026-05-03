@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -17,27 +17,22 @@ import {
 type DeleteDishButtonProps = {
   dishId: string;
   dishName: string;
+  onDelete: (dishId: string) => Promise<void>;
 };
 
-export function DeleteDishButton({ dishId, dishName }: DeleteDishButtonProps) {
+export function DeleteDishButton({ dishId, dishName, onDelete }: DeleteDishButtonProps) {
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
-  const router = useRouter();
 
   const handleDelete = async () => {
     setLoading(true);
 
     try {
-      const response = await fetch(`/api/dishes/${dishId}`, {
-        method: "DELETE",
-      });
-
-      if (response.ok) {
-        setOpen(false);
-        router.refresh();
-      }
-    } catch (error) {
-      console.error("Failed to delete dish:", error);
+      await onDelete(dishId);
+      setOpen(false);
+      toast.success(`已删除「${dishName}」`);
+    } catch {
+      toast.error("删除失败，请重试");
     } finally {
       setLoading(false);
     }
