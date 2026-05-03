@@ -1,11 +1,10 @@
 "use client";
 
-import { useRef } from "react";
 import { Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { ImageUploader, type ImageUploaderHandle } from "@/components/image-uploader";
+import { ImageUploader } from "@/components/image-uploader";
 
 export type FormAttachment = {
   title: string;
@@ -21,16 +20,12 @@ type AttachmentFormProps = {
 };
 
 export function AttachmentForm({ attachment, onChange, disabled }: AttachmentFormProps) {
-  const imageUploaderRef = useRef<ImageUploaderHandle>(null);
-
   const handleUpdate = (field: keyof FormAttachment, value: string | boolean | string[]) => {
     onChange({ ...attachment, [field]: value });
   };
 
   const handleAddImage = (url: string) => {
     handleUpdate("image_urls", [...attachment.image_urls, url]);
-    // 重置 ImageUploader
-    imageUploaderRef.current?.reset();
   };
 
   const handleRemoveImage = (index: number) => {
@@ -67,7 +62,7 @@ export function AttachmentForm({ attachment, onChange, disabled }: AttachmentFor
                 <img
                   src={url}
                   alt={`附录图片 ${index + 1}`}
-                  className="w-full h-24 object-cover rounded-lg"
+                  className="w-full aspect-square object-cover rounded-lg"
                 />
                 <button
                   type="button"
@@ -83,9 +78,7 @@ export function AttachmentForm({ attachment, onChange, disabled }: AttachmentFor
         )}
 
         <ImageUploader
-          ref={imageUploaderRef}
-          value={undefined}
-          onChange={handleAddImage}
+          onUpload={handleAddImage}
           disabled={disabled}
         />
       </div>

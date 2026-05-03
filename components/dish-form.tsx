@@ -286,11 +286,29 @@ export function DishForm({ dish, mode }: DishFormProps) {
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label>菜品图片</Label>
-            <ImageUploader
-              value={imageUrl || undefined}
-              onChange={(url) => setValue("image_url", url)}
-              disabled={loading}
-            />
+            {imageUrl ? (
+              <div className="relative">
+                <img
+                  src={imageUrl}
+                  alt="菜品图片"
+                  className="w-full h-48 object-cover rounded-lg"
+                />
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="icon"
+                  className="absolute top-2 right-2"
+                  onClick={() => setValue("image_url", "")}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <ImageUploader
+                onUpload={(url) => setValue("image_url", url)}
+                disabled={loading}
+              />
+            )}
           </div>
 
           <div className="space-y-2">

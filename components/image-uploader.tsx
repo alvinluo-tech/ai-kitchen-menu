@@ -1,18 +1,13 @@
 "use client";
 
-import { useState, useRef, forwardRef, useImperativeHandle } from "react";
+import { useState, useRef } from "react";
 import imageCompression from "browser-image-compression";
-import { Upload, X, Loader2, CheckCircle } from "lucide-react";
+import { Upload, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 type ImageUploaderProps = {
-  value?: string;
-  onChange: (url: string) => void;
+  onUpload: (url: string) => void;
   disabled?: boolean;
-};
-
-export type ImageUploaderHandle = {
-  reset: () => void;
 };
 
 const COMPRESSION_OPTIONS = {
@@ -23,32 +18,11 @@ const COMPRESSION_OPTIONS = {
   fileType: "image/webp" as const,
 };
 
-export const ImageUploader = forwardRef<ImageUploaderHandle, ImageUploaderProps>(
-  function ImageUploader({ value, onChange, disabled }, ref) {
-    const [uploading, setUploading] = useState(false);
-    const [compressing, setCompressing] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [preview, setPreview] = useState<string | null>(value ?? null);
-    const [originalSize, setOriginalSize] = useState<number | null>(null);
-    const [compressedSize, setCompressedSize] = useState<number | null>(null);
-    const inputRef = useRef<HTMLInputElement>(null);
-
-    useImperativeHandle(ref, () => ({
-      reset: () => {
-        setPreview(null);
-        setOriginalSize(null);
-        setCompressedSize(null);
-        if (inputRef.current) {
-          inputRef.current.value = "";
-        }
-      },
-    }));
-
-  const formatSize = (bytes: number) => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
-  };
+export function ImageUploader({ onUpload, disabled }: ImageUploaderProps) {
+  const [uploading, setUploading] = useState(false);
+  const [compressing, setCompressing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const handleUpload = async (file: File) => {
     if (!file.type.startsWith("image/")) {
@@ -61,13 +35,11 @@ export const ImageUploader = forwardRef<ImageUploaderHandle, ImageUploaderProps>
       return;
     }
 
-    setOriginalSize(file.size);
     setError(null);
 
     try {
       setCompressing(true);
       const compressedFile = await imageCompression(file, COMPRESSION_OPTIONS);
-      setCompressedSize(compressedFile.size);
       setCompressing(false);
 
       setUploading(true);
@@ -85,8 +57,12 @@ export const ImageUploader = forwardRef<ImageUploaderHandle, ImageUploaderProps>
         throw new Error(data.error || "上传失败");
       }
 
-      setPreview(data.url);
-      onChange(data.url);
+      onUpload(data.url);
+
+      // 重置 input
+      if (inputRef.current) {
+        inputRef.current.value = "";
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "上传失败");
     } finally {
@@ -102,16 +78,6 @@ export const ImageUploader = forwardRef<ImageUploaderHandle, ImageUploaderProps>
     }
   };
 
-  const handleRemove = () => {
-    setPreview(null);
-    setOriginalSize(null);
-    setCompressedSize(null);
-    onChange("");
-    if (inputRef.current) {
-      inputRef.current.value = "";
-    }
-  };
-
   return (
     <div className="space-y-2">
       <input
@@ -123,59 +89,28 @@ export const ImageUploader = forwardRef<ImageUploaderHandle, ImageUploaderProps>
         disabled={disabled || uploading || compressing}
       />
 
-      {preview ? (
-        <div className="relative w-full aspect-video rounded-lg overflow-hidden border">
-          <img
-            src={preview}
-            alt="预览"
-            className="w-full h-full object-cover"
-          />
-          {!disabled && (
-            <Button
-              type="button"
-              variant="destructive"
-              size="icon"
-              className="absolute top-2 right-2 h-8 w-8"
-              onClick={handleRemove}
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          )}
-          {compressedSize && (
-            <div className="absolute bottom-2 left-2 bg-black/60 text-white text-xs px-2 py-1 rounded flex items-center gap-1">
-              <CheckCircle className="h-3 w-3" />
-              WebP · {formatSize(compressedSize)}
-            </div>
-          )}
-        </div>
-      ) : (
-        <Button
-          type="button"
-          variant="outline"
-          className="w-full h-32 border-dashed"
-          onClick={() => inputRef.current?.click()}
-          disabled={disabled || uploading || compressing}
-        >
-          {compressing || uploading ? (
-            <Loader2 className="h-6 w-6 animate-spin mr-2" />
-          ) : (
-            <Upload className="h-6 w-6 mr-2" />
-          )}
-          {compressing
-            ? "压缩中..."
-            : uploading
-            ? "上传中..."
-            : "点击上传图片"}
-        </Button>
-      )}
+      <Button
+        type="button"
+        variant="outline"
+        className="w-full h-24 border-dashed"
+        onClick={() => inputRef.current?.click()}
+        disabled={disabled || uploading || compressing}
+      >
+        {compressing || uploading ? (
+          <Loader2 className="h-5 w-5 animate-spin mr-2" />
+        ) : (
+          <Upload className="h-5 w-5 mr-2" />
+        )}
+        {compressing
+          ? "压缩中..."
+          : uploading
+          ? "上传中..."
+          : "点击上传图片"}
+      </Button>
 
       {error && (
         <p className="text-sm text-red-600">{error}</p>
       )}
-
-      <p className="text-xs text-gray-500">
-        支持 JPG、PNG、WebP，最大 5MB，自动压缩为 WebP 格式
-      </p>
     </div>
   );
-});
+}

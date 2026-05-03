@@ -183,7 +183,9 @@ export default async function DishDetailPage({ params }: Props) {
         </div>
 
         {/* 公开附录区域 - 由客户端组件加载 */}
-        <PublicAttachments dishId={dish.id} />
+        <div className="container mx-auto px-4 max-w-4xl">
+          <PublicAttachments dishId={dish.id} />
+        </div>
       </main>
       <SiteFooter />
     </>
