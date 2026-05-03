@@ -83,7 +83,7 @@ export function DishForm({ dish, mode }: DishFormProps) {
             setAttachment({
               title: a.title || "",
               content: a.content || "",
-              image_urls: a.image_url ? [a.image_url] : [],
+              image_urls: a.image_urls || [],
               is_public: a.is_public,
             });
           }
@@ -255,7 +255,7 @@ export function DishForm({ dish, mode }: DishFormProps) {
             ? {
                 title: attachment.title,
                 content: attachment.content,
-                image_url: attachment.image_urls[0] || null,
+                image_urls: attachment.image_urls,
                 is_public: attachment.is_public,
               }
             : null,

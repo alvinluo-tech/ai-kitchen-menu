@@ -61,13 +61,16 @@ export function PublicAttachments({ dishId }: PublicAttachmentsProps) {
                 {attachment.content}
               </p>
             )}
-            {attachment.image_url && (
-              <div className="mt-2">
-                <img
-                  src={attachment.image_url}
-                  alt={attachment.title || "附录图片"}
-                  className="w-full h-auto max-h-96 object-contain rounded-lg"
-                />
+            {attachment.image_urls && attachment.image_urls.length > 0 && (
+              <div className="mt-2 space-y-2">
+                {attachment.image_urls.map((url, index) => (
+                  <img
+                    key={index}
+                    src={url}
+                    alt={attachment.title || `附录图片 ${index + 1}`}
+                    className="w-full h-auto max-h-96 object-contain rounded-lg"
+                  />
+                ))}
               </div>
             )}
           </div>

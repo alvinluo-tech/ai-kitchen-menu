@@ -38,7 +38,7 @@ const DishSchema = z.object({
   attachment: z.object({
     title: z.string().optional(),
     content: z.string().optional(),
-    image_url: z.string().url().optional().nullable(),
+    image_urls: z.array(z.string().url()).optional().default([]),
     is_public: z.boolean().default(false),
   }).optional().nullable(),
 });
@@ -150,12 +150,12 @@ export async function POST(request: Request) {
     }
 
     // 保存附录
-    if (attachment && (attachment.title || attachment.content || attachment.image_url)) {
+    if (attachment && (attachment.title || attachment.content || attachment.image_urls?.length > 0)) {
       await supabase.from("dish_attachments").insert({
         dish_id: dish.id,
         title: attachment.title || null,
         content: attachment.content || null,
-        image_url: attachment.image_url || null,
+        image_urls: attachment.image_urls || [],
         is_public: attachment.is_public,
         sort_order: 0,
       });
