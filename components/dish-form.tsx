@@ -64,7 +64,6 @@ export function DishForm({ dish, mode }: DishFormProps) {
   const [tagInput, setTagInput] = useState("");
   const [assistField, setAssistField] = useState<"description" | "story" | "tags" | null>(null);
   const [editingIngredientIndex, setEditingIngredientIndex] = useState<number | null>(null);
-  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const {
     register,
@@ -267,37 +266,6 @@ export function DishForm({ dish, mode }: DishFormProps) {
             />
             {errors.name && (
               <p className="text-sm text-red-600">{errors.name.message}</p>
-            )}
-          </div>
-
-          <div className="border-t pt-4 mt-4">
-            <button
-              type="button"
-              onClick={() => setShowAdvanced(!showAdvanced)}
-              className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1"
-            >
-              {showAdvanced ? "收起" : "展开"}高级设置
-              <svg
-                className={`h-4 w-4 transition-transform ${showAdvanced ? "rotate-180" : ""}`}
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-            {showAdvanced && (
-              <div className="mt-3 space-y-2">
-                <Label htmlFor="slug">菜品链接</Label>
-                <Input
-                  id="slug"
-                  {...register("slug")}
-                  placeholder="系统会根据菜名自动生成"
-                />
-                <p className="text-xs text-gray-500">
-                  系统会根据菜名自动生成菜品链接，一般不用修改
-                </p>
-              </div>
             )}
           </div>
 
