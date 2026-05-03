@@ -38,6 +38,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    // admin.generateLink 返回的 action_link 包含 token，点击后自动处理认证
     const magicLink = data.properties.action_link;
 
     await sendMagicLinkEmail(email, magicLink);

@@ -12,7 +12,17 @@ export async function GET(request: Request) {
     if (!error) {
       return NextResponse.redirect(`${origin}${next}`);
     }
+    console.error("Auth callback error:", error);
   }
 
-  return NextResponse.redirect(`${origin}/auth/auth-code-error`);
+  // 如果没有 code 或者交换失败，检查是否已有 session
+  const supabase = await createClient();
+  const { data: { session } } = await supabase.auth.getSession();
+
+  if (session) {
+    return NextResponse.redirect(`${origin}${next}`);
+  }
+
+  // 最终回退到首页
+  return NextResponse.redirect(`${origin}/`);
 }
