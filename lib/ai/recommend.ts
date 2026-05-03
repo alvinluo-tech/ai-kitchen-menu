@@ -1,5 +1,4 @@
 import { generateText } from "ai";
-import { createOpenAI } from "@ai-sdk/openai";
 import { z } from "zod";
 import {
   UserPreferenceSchema,
@@ -7,11 +6,7 @@ import {
 } from "@/lib/ai/schemas";
 import { getAvailableDishes } from "@/lib/dishes/queries";
 import { getCandidateDishes } from "@/lib/dishes/scoring";
-
-const xiaomi = createOpenAI({
-  baseURL: process.env.XIAOMI_API_BASE_URL!,
-  apiKey: process.env.XIAOMI_API_KEY!,
-});
+import { xiaomiModel } from "@/lib/ai/xiaomi";
 
 function extractJson(text: string) {
   const match = text.match(/```json\s*([\s\S]*?)```/);
@@ -26,7 +21,7 @@ function extractJson(text: string) {
 
 export async function recommendDishesFromMessage(message: string) {
   const { text: preferenceText } = await generateText({
-    model: xiaomi("mimo-v2.5-pro"),
+    model: xiaomiModel,
     system: `
 你是一个菜品偏好解析助手。
 你的任务是从用户自然语言中提取偏好，输出 JSON。
@@ -91,7 +86,7 @@ export async function recommendDishesFromMessage(message: string) {
   const allowedDishIds = candidatePayload.map((dish) => dish.dishId);
 
   const { text: recommendationText } = await generateText({
-    model: xiaomi("mimo-v2.5-pro"),
+    model: xiaomiModel,
     system: `
 你是一个温柔、自然、有朋友感的 AI 私厨菜单推荐助手。
 
