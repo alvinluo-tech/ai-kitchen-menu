@@ -145,7 +145,7 @@ export default function LoginPage() {
                 <div className="space-y-2">
                   <Input
                     type="email"
-                    placeholder="your@email.com"
+                    placeholder="请输入邮箱地址"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
