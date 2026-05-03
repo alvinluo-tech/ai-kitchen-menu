@@ -7,7 +7,7 @@ type DishGridProps = {
 
 export function DishGrid({ dishes }: DishGridProps) {
   return (
-    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+    <div className="grid grid-cols-1 gap-4 md:gap-6 md:grid-cols-2 lg:grid-cols-3">
       {dishes.map((dish) => (
         <DishCard
           key={dish.id}
@@ -18,6 +18,7 @@ export function DishGrid({ dishes }: DishGridProps) {
           tags={dish.dish_tags?.map((tag) => tag.tag) ?? []}
           cookingTimeMinutes={dish.cooking_time_minutes}
           spiceLevel={dish.spice_level}
+          chef={dish.profiles}
         />
       ))}
     </div>

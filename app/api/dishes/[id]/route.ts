@@ -51,6 +51,17 @@ export async function PUT(request: Request, { params }: Props) {
       return NextResponse.json({ error: "无权限" }, { status: 403 });
     }
 
+    // 检查菜品所有权
+    const { data: existingDish } = await supabase
+      .from("dishes")
+      .select("created_by")
+      .eq("id", id)
+      .single();
+
+    if (!existingDish || existingDish.created_by !== user.id) {
+      return NextResponse.json({ error: "无权编辑此菜品" }, { status: 403 });
+    }
+
     const body = await request.json();
     const parsed = DishSchema.safeParse(body);
 
@@ -142,6 +153,17 @@ export async function DELETE(request: Request, { params }: Props) {
 
     if (profile?.role !== "chef") {
       return NextResponse.json({ error: "无权限" }, { status: 403 });
+    }
+
+    // 检查菜品所有权
+    const { data: existingDish } = await supabase
+      .from("dishes")
+      .select("created_by")
+      .eq("id", id)
+      .single();
+
+    if (!existingDish || existingDish.created_by !== user.id) {
+      return NextResponse.json({ error: "无权删除此菜品" }, { status: 403 });
     }
 
     const { error } = await supabase.from("dishes").delete().eq("id", id);

@@ -18,6 +18,11 @@ type DishCardProps = {
   matchedIngredients?: string[];
   missingIngredients?: string[];
   rank?: number;
+  chef?: {
+    id: string;
+    display_name: string | null;
+    avatar_url: string | null;
+  } | null;
 };
 
 export function DishCard({
@@ -33,6 +38,7 @@ export function DishCard({
   matchedIngredients = [],
   missingIngredients = [],
   rank,
+  chef,
 }: DishCardProps) {
   return (
     <Card className="overflow-hidden rounded-2xl shadow-md hover:shadow-lg transition-shadow">
@@ -61,6 +67,31 @@ export function DishCard({
           <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm rounded-full px-2.5 py-1 text-xs md:text-sm font-medium text-orange-600">
             {score}%
           </div>
+        )}
+
+        {chef && (
+          <Link
+            href={`/chefs/${chef.id}`}
+            className="absolute bottom-2 right-2 flex items-center gap-1.5 bg-white/90 backdrop-blur-sm rounded-full pl-1 pr-2.5 py-1 hover:bg-white transition-colors"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-5 h-5 rounded-full overflow-hidden bg-orange-100 flex-shrink-0">
+              {chef.avatar_url ? (
+                <Image
+                  src={chef.avatar_url}
+                  alt={chef.display_name || "厨师"}
+                  width={20}
+                  height={20}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <ChefHat className="h-3 w-3 text-orange-400 m-auto mt-1" />
+              )}
+            </div>
+            <span className="text-[10px] font-medium text-gray-700 truncate max-w-[60px]">
+              {chef.display_name || "匿名"}
+            </span>
+          </Link>
         )}
       </div>
 

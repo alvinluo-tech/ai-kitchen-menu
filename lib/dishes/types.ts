@@ -18,6 +18,12 @@ export type DishTag = {
   tag: string;
 };
 
+export type ChefInfo = {
+  id: string;
+  display_name: string | null;
+  avatar_url: string | null;
+};
+
 export type Dish = {
   id: string;
   name: string;
@@ -31,10 +37,12 @@ export type Dish = {
   cooking_time_minutes?: number | null;
   servings?: number | null;
   is_available: boolean;
+  created_by?: string | null;
   created_at: string;
   updated_at: string;
   dish_ingredients?: DishIngredient[];
   dish_tags?: DishTag[];
+  profiles?: ChefInfo | null;
 };
 
 export type RecommendedDish = Dish & {

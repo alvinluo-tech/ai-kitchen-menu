@@ -42,6 +42,8 @@ export default async function DishDetailPage({ params }: Props) {
     hard: "困难",
   };
 
+  const chef = dish.profiles;
+
   return (
     <>
       <SiteHeader />
@@ -73,6 +75,33 @@ export default async function DishDetailPage({ params }: Props) {
             )}
 
             <div className="p-4 md:p-8">
+              {chef && (
+                <Link
+                  href={`/chefs/${chef.id}`}
+                  className="inline-flex items-center gap-2 mb-4 p-2 -ml-2 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  <div className="w-10 h-10 rounded-full overflow-hidden bg-orange-100 flex-shrink-0">
+                    {chef.avatar_url ? (
+                      <Image
+                        src={chef.avatar_url}
+                        alt={chef.display_name || "厨师"}
+                        width={40}
+                        height={40}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <ChefHat className="h-5 w-5 text-orange-400 m-auto mt-2.5" />
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">
+                      {chef.display_name || "匿名厨师"}
+                    </p>
+                    <p className="text-xs text-gray-500">查看厨师风采</p>
+                  </div>
+                </Link>
+              )}
+
               <h1 className="text-2xl md:text-3xl font-bold mb-2">{dish.name}</h1>
               <p className="text-sm md:text-base text-gray-600 mb-4">{dish.description}</p>
 
