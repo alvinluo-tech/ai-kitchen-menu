@@ -23,16 +23,19 @@ type DishListProps = {
 export function DishList({ dishes }: DishListProps) {
   const router = useRouter();
 
-  const handleRowClick = (slug: string) => {
-    router.push(`/menu/${slug}`);
-  };
-
   return (
     <div className="space-y-3 md:space-y-4">
       {dishes.map((dish) => (
         <div
           key={dish.id}
-          onClick={() => handleRowClick(dish.slug)}
+          role="button"
+          tabIndex={0}
+          onClick={() => router.push(`/menu/${dish.slug}`)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              router.push(`/menu/${dish.slug}`);
+            }
+          }}
           className="flex items-center gap-3 md:gap-4 p-3 md:p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer"
         >
           <div className="w-14 h-14 md:w-16 md:h-16 bg-gradient-to-br from-orange-100 to-amber-50 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
