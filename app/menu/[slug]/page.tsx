@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+import { createClient } from "@/lib/supabase/server";
 import { ArrowLeft, Clock, Flame, Users, ChefHat } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -44,6 +45,18 @@ export default async function DishDetailPage({ params }: Props) {
   };
 
   const chef = dish.profiles;
+
+  // 检查当前用户是否是菜品作者
+  let isOwner = false;
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user && dish.created_by === user.id) {
+      isOwner = true;
+    }
+  } catch (error) {
+    // 忽略错误，isOwner 保持 false
+  }
 
   return (
     <>
@@ -184,7 +197,7 @@ export default async function DishDetailPage({ params }: Props) {
 
         {/* 公开附录区域 - 由客户端组件加载 */}
         <div className="container mx-auto px-4 max-w-4xl">
-          <PublicAttachments dishId={dish.id} />
+          <PublicAttachments dishId={dish.id} isOwner={isOwner} />
         </div>
       </main>
       <SiteFooter />

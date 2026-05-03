@@ -1,14 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Loader2, BookOpen } from "lucide-react";
+import { Loader2, BookOpen, Lock, Eye } from "lucide-react";
 import type { DishAttachment } from "@/lib/dishes/attachment-types";
 
 type PublicAttachmentsProps = {
   dishId: string;
+  isOwner?: boolean;
 };
 
-export function PublicAttachments({ dishId }: PublicAttachmentsProps) {
+export function PublicAttachments({ dishId, isOwner = false }: PublicAttachmentsProps) {
   const [attachments, setAttachments] = useState<DishAttachment[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -77,6 +78,21 @@ export function PublicAttachments({ dishId }: PublicAttachmentsProps) {
                     <h4 className="font-semibold text-sm md:text-base text-gray-800">
                       {attachment.title}
                     </h4>
+                    {isOwner && (
+                      <div className="flex items-center gap-1 ml-auto">
+                        {attachment.is_public ? (
+                          <div className="flex items-center gap-1 text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
+                            <Eye className="h-3 w-3" />
+                            <span>公开</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1 text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                            <Lock className="h-3 w-3" />
+                            <span>仅自己可见</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
 
