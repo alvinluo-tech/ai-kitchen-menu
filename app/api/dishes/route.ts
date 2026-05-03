@@ -1,7 +1,19 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
-import slugify from "slugify";
+import { pinyin } from "pinyin-pro";
+
+function generateSlug(name: string): string {
+  // 将中文转换为拼音
+  const pinyinResult = pinyin(name, { toneType: "none", type: "array" }).join("");
+  // 清理并格式化
+  return pinyinResult
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
 
 const DishSchema = z.object({
   name: z.string().min(1),
@@ -26,7 +38,7 @@ const DishSchema = z.object({
 });
 
 async function generateUniqueSlug(supabase: ReturnType<typeof createClient> extends Promise<infer T> ? T : never, name: string): Promise<string> {
-  let baseSlug = slugify(name, { lower: true, strict: true });
+  let baseSlug = generateSlug(name);
   let slug = baseSlug;
   let counter = 2;
 
