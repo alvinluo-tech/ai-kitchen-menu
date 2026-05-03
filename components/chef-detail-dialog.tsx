@@ -137,7 +137,7 @@ export function ChefDetailDialog({ chef, open, onOpenChange }: ChefDetailDialogP
           )}
 
           <div className="pt-2">
-            <Link href={`/menu`} onClick={() => onOpenChange(false)}>
+            <Link href={`/chefs/${chef.id}`} onClick={() => onOpenChange(false)}>
               <Button variant="outline" className="w-full gap-2">
                 <UtensilsCrossed className="h-4 w-4" />
                 查看全部菜品
