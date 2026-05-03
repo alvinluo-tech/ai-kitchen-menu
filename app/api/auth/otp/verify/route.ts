@@ -22,6 +22,7 @@ export async function POST(request: Request) {
     const { email, token } = parsed.data;
     const supabase = await createClient();
 
+    // 验证 OTP
     const { data, error } = await supabase.auth.verifyOtp({
       email,
       token,
@@ -36,6 +37,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "登录失败" }, { status: 401 });
     }
 
+    // 检查是否是 chef
     const { data: profile } = await supabase
       .from("profiles")
       .select("role")
@@ -49,10 +51,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       message: "登录成功",
-      user: {
-        id: data.user.id,
-        email: data.user.email,
-      },
     });
   } catch (error) {
     console.error("OTP verify error:", error);
