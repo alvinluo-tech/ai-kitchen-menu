@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, Wand2, RefreshCw } from "lucide-react";
+import { Loader2, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
@@ -38,13 +37,6 @@ const fieldLabels = {
   description: "描述",
   story: "朋友的一句话",
   tags: "风味标签",
-};
-
-const actionLabels = {
-  generate: "根据关键词生成",
-  rewrite: "改写得更自然",
-  expand: "扩写成完整内容",
-  shorten: "精简保留核心",
 };
 
 export function FieldAssistDialog({
@@ -116,47 +108,42 @@ export function FieldAssistDialog({
             AI 帮你写{fieldLabels[field]}
           </DialogTitle>
           <DialogDescription>
-            输入关键词或选择操作，AI 会帮你生成内容
+            {currentValue ? "输入关键词，AI 会帮你改写内容" : "输入关键词，AI 会帮你生成内容"}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          <div className="space-y-2">
-            <Label>操作方式</Label>
-            <Select value={action} onValueChange={(v) => setAction(v as typeof action)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="generate">根据关键词生成</SelectItem>
-                {currentValue && (
-                  <>
-                    <SelectItem value="rewrite">改写得更自然</SelectItem>
-                    <SelectItem value="expand">扩写成完整内容</SelectItem>
-                    <SelectItem value="shorten">精简保留核心</SelectItem>
-                  </>
-                )}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {action === "generate" && (
+          {currentValue && (
             <div className="space-y-2">
-              <Label>关键词</Label>
-              <Textarea
-                placeholder={
-                  field === "description"
-                    ? "例如：酸甜、快手、家常、适合配米饭"
-                    : field === "story"
-                    ? "例如：小时候妈妈常做、很温暖、下饭"
-                    : "例如：下饭、家常、快手"
-                }
-                value={keywords}
-                onChange={(e) => setKeywords(e.target.value)}
-                rows={2}
-              />
+              <Label>操作方式</Label>
+              <Select value={action} onValueChange={(v) => setAction(v as typeof action)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="rewrite">改写得更自然</SelectItem>
+                  <SelectItem value="expand">扩写成完整内容</SelectItem>
+                  <SelectItem value="shorten">精简保留核心</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           )}
+
+          <div className="space-y-2">
+            <Label>关键词</Label>
+            <Textarea
+              placeholder={
+                field === "description"
+                  ? "例如：酸甜、快手、家常、适合配米饭"
+                  : field === "story"
+                  ? "例如：小时候妈妈常做、很温暖、下饭"
+                  : "例如：下饭、家常、快手"
+              }
+              value={keywords}
+              onChange={(e) => setKeywords(e.target.value)}
+              rows={2}
+            />
+          </div>
 
           {field !== "tags" && (
             <div className="space-y-2">
@@ -181,7 +168,7 @@ export function FieldAssistDialog({
 
           {result && (
             <div className="space-y-2">
-              <Label>AI 生成结果</Label>
+              <Label>生成结果</Label>
               <div className="p-3 bg-orange-50 rounded-lg border border-orange-200">
                 {Array.isArray(result) ? (
                   <div className="flex flex-wrap gap-2">
@@ -218,7 +205,7 @@ export function FieldAssistDialog({
             </Button>
 
             {result && (
-              <Button onClick={handleApply} variant="default" className="gap-2">
+              <Button onClick={handleApply} variant="default">
                 使用此内容
               </Button>
             )}
