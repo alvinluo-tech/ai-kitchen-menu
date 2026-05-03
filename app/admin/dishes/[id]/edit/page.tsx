@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { DishForm } from "@/components/dish-form";
+import { AttachmentForm } from "@/components/attachment-form";
 import { requireChef } from "@/lib/auth";
 import { getDishById } from "@/lib/dishes/queries";
 
@@ -29,9 +30,9 @@ export async function generateMetadata({ params }: Props) {
 
 export default async function EditDishPage({ params }: Props) {
   const { id } = await params;
-  const { isChef } = await requireChef();
+  const { user, isChef } = await requireChef();
 
-  if (!isChef) {
+  if (!isChef || !user) {
     return (
       <>
         <SiteHeader />
@@ -55,21 +56,28 @@ export default async function EditDishPage({ params }: Props) {
     notFound();
   }
 
+  // 检查是否是菜品所有者
+  const isOwner = dish.created_by === user.id;
+
   return (
     <>
       <SiteHeader />
-      <main className="flex-1 py-8">
+      <main className="flex-1 py-6 md:py-8">
         <div className="container mx-auto px-4 max-w-2xl">
           <Link href="/admin">
-            <Button variant="ghost" className="mb-6 gap-2">
+            <Button variant="ghost" className="mb-4 md:mb-6 gap-2 text-sm">
               <ArrowLeft className="h-4 w-4" />
               返回后台
             </Button>
           </Link>
 
-          <h1 className="text-3xl font-bold mb-8">编辑 {dish.name}</h1>
+          <h1 className="text-2xl md:text-3xl font-bold mb-6 md:mb-8">编辑 {dish.name}</h1>
 
-          <DishForm dish={dish} mode="edit" />
+          <div className="space-y-6">
+            <DishForm dish={dish} mode="edit" />
+
+            <AttachmentForm dishId={dish.id} isOwner={isOwner} />
+          </div>
         </div>
       </main>
       <SiteFooter />

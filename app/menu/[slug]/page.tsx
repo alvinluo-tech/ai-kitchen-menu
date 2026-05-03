@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
+import { PublicAttachments } from "@/components/public-attachments";
 import { getDishBySlug } from "@/lib/dishes/queries";
 
 export const dynamic = "force-dynamic";
@@ -180,6 +181,9 @@ export default async function DishDetailPage({ params }: Props) {
             </div>
           </div>
         </div>
+
+        {/* 公开附录区域 - 由客户端组件加载 */}
+        <PublicAttachments dishId={dish.id} />
       </main>
       <SiteFooter />
     </>
