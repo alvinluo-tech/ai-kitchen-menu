@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import slugify from "slugify";
 
 const DishSchema = z.object({
   name: z.string().min(1),
-  slug: z.string().min(1),
+  slug: z.string().optional(),
   description: z.string().min(1),
   story: z.string().optional(),
   image_url: z.string().url().optional().or(z.literal("")),
@@ -23,6 +24,27 @@ const DishSchema = z.object({
   ),
   tags: z.array(z.string()),
 });
+
+async function generateUniqueSlug(supabase: ReturnType<typeof createClient> extends Promise<infer T> ? T : never, name: string): Promise<string> {
+  let baseSlug = slugify(name, { lower: true, strict: true });
+  let slug = baseSlug;
+  let counter = 2;
+
+  while (true) {
+    const { data } = await supabase
+      .from("dishes")
+      .select("id")
+      .eq("slug", slug)
+      .single();
+
+    if (!data) {
+      return slug;
+    }
+
+    slug = `${baseSlug}-${counter}`;
+    counter++;
+  }
+}
 
 export async function POST(request: Request) {
   try {
@@ -58,10 +80,14 @@ export async function POST(request: Request) {
 
     const { ingredients, tags, ...dishData } = parsed.data;
 
+    // 自动生成 slug
+    const slug = dishData.slug || await generateUniqueSlug(supabase, dishData.name);
+
     const { data: dish, error: dishError } = await supabase
       .from("dishes")
       .insert({
         ...dishData,
+        slug,
         image_url: dishData.image_url || null,
         created_by: user.id,
       })
