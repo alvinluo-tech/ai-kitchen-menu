@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@supabase/supabase-js";
 
 const RequestSchema = z.object({
   email: z.string().email("请输入有效的邮箱地址"),
@@ -19,10 +19,14 @@ export async function POST(request: Request) {
     }
 
     const { email } = parsed.data;
-    const supabase = await createClient();
+
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
 
     // 检查是否是 chef 用户
-    const { data: users } = await supabase.auth.admin.listUsers();
+    const { data: users } = await supabaseAdmin.auth.admin.listUsers();
     const user = users?.users?.find((u) => u.email === email);
 
     if (!user) {
@@ -32,7 +36,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const { data: profile } = await supabase
+    const { data: profile } = await supabaseAdmin
       .from("profiles")
       .select("role")
       .eq("id", user.id)
@@ -45,8 +49,8 @@ export async function POST(request: Request) {
       );
     }
 
-    // 发送 OTP（Supabase 会通过配置的 SMTP 发送）
-    const { error } = await supabase.auth.signInWithOtp({
+    // 使用 service role client 发送 OTP
+    const { error } = await supabaseAdmin.auth.signInWithOtp({
       email,
       options: {
         shouldCreateUser: false,
