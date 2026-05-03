@@ -18,6 +18,7 @@ import {
   SelectItem,
   SelectTrigger,
 } from "@/components/ui/select";
+import { AiLoadingState } from "@/components/ai-loading-state";
 
 type FieldAssistDialogProps = {
   open: boolean;
@@ -196,6 +197,8 @@ export function FieldAssistDialog({
           {error && (
             <p className="text-sm text-red-600">{error}</p>
           )}
+
+          {loading && <AiLoadingState mode="field" />}
 
           {result && (
             <div className="space-y-2">

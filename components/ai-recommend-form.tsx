@@ -5,9 +5,9 @@ import { Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import { DishCard } from "@/components/dish-card";
 import { EmptyState } from "@/components/empty-state";
+import { AiLoadingState } from "@/components/ai-loading-state";
 
 type Recommendation = {
   dish: {
@@ -119,16 +119,7 @@ export function AiRecommendForm() {
         </Card>
       )}
 
-      {loading && (
-        <div className="space-y-4">
-          <Skeleton className="h-16 md:h-20 w-full" />
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-            {[1, 2, 3].map((i) => (
-              <Skeleton key={i} className="h-72 md:h-80 rounded-2xl" />
-            ))}
-          </div>
-        </div>
-      )}
+      {loading && <AiLoadingState mode="recommend" />}
 
       {result && !loading && (
         <div className="space-y-4 md:space-y-6">
