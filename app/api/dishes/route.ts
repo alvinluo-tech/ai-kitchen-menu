@@ -35,14 +35,12 @@ const DishSchema = z.object({
     })
   ),
   tags: z.array(z.string()),
-  attachments: z.array(
-    z.object({
-      title: z.string().optional(),
-      content: z.string().optional(),
-      image_url: z.string().url().optional().or(z.literal("")),
-      is_public: z.boolean().default(false),
-    })
-  ).optional(),
+  attachment: z.object({
+    title: z.string().optional(),
+    content: z.string().optional(),
+    image_url: z.string().url().optional().nullable(),
+    is_public: z.boolean().default(false),
+  }).optional().nullable(),
 });
 
 async function generateUniqueSlug(supabase: ReturnType<typeof createClient> extends Promise<infer T> ? T : never, name: string): Promise<string> {
@@ -98,7 +96,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const { ingredients, tags, attachments, slug: _, ...dishData } = parsed.data;
+    const { ingredients, tags, attachment, slug: _, ...dishData } = parsed.data;
 
     // 自动生成 slug
     const slug = _ || await generateUniqueSlug(supabase, dishData.name);
@@ -151,21 +149,16 @@ export async function POST(request: Request) {
       });
     }
 
-    // 保存附件
-    if (attachments && attachments.length > 0) {
-      for (let i = 0; i < attachments.length; i++) {
-        const attachment = attachments[i];
-        if (attachment.title || attachment.content || attachment.image_url) {
-          await supabase.from("dish_attachments").insert({
-            dish_id: dish.id,
-            title: attachment.title || null,
-            content: attachment.content || null,
-            image_url: attachment.image_url || null,
-            is_public: attachment.is_public,
-            sort_order: i,
-          });
-        }
-      }
+    // 保存附录
+    if (attachment && (attachment.title || attachment.content || attachment.image_url)) {
+      await supabase.from("dish_attachments").insert({
+        dish_id: dish.id,
+        title: attachment.title || null,
+        content: attachment.content || null,
+        image_url: attachment.image_url || null,
+        is_public: attachment.is_public,
+        sort_order: 0,
+      });
     }
 
     return NextResponse.json({ dish }, { status: 201 });

@@ -23,7 +23,7 @@ import { ImageUploader } from "@/components/image-uploader";
 import { AiAssistForm } from "@/components/ai-assist-form";
 import { MagicWandButton } from "@/components/magic-wand-button";
 import { FieldAssistDialog } from "@/components/field-assist-dialog";
-import { FormAttachmentList, type FormAttachment } from "@/components/form-attachment-list";
+import { AttachmentForm, type FormAttachment } from "@/components/attachment-form";
 import type { Dish } from "@/lib/dishes/types";
 import type { DishDraft } from "@/lib/ai/dish-draft-schema";
 import slugify from "slugify";
@@ -65,7 +65,12 @@ export function DishForm({ dish, mode }: DishFormProps) {
   const [tagInput, setTagInput] = useState("");
   const [assistField, setAssistField] = useState<"description" | "story" | "tags" | null>(null);
   const [editingIngredientIndex, setEditingIngredientIndex] = useState<number | null>(null);
-  const [attachments, setAttachments] = useState<FormAttachment[]>([]);
+  const [attachment, setAttachment] = useState<FormAttachment>({
+    title: "",
+    content: "",
+    image_urls: [],
+    is_public: false,
+  });
 
   // 编辑模式下加载已有附录
   useEffect(() => {
@@ -73,15 +78,14 @@ export function DishForm({ dish, mode }: DishFormProps) {
       fetch(`/api/dishes/${dish.id}/attachments`)
         .then((res) => res.json())
         .then((data) => {
-          if (data.attachments) {
-            setAttachments(
-              data.attachments.map((a: any) => ({
-                title: a.title || "",
-                content: a.content || "",
-                image_url: a.image_url || "",
-                is_public: a.is_public,
-              }))
-            );
+          if (data.attachments && data.attachments.length > 0) {
+            const a = data.attachments[0];
+            setAttachment({
+              title: a.title || "",
+              content: a.content || "",
+              image_urls: a.image_url ? [a.image_url] : [],
+              is_public: a.is_public,
+            });
           }
         })
         .catch(console.error);
@@ -247,7 +251,14 @@ export function DishForm({ dish, mode }: DishFormProps) {
         },
         body: JSON.stringify({
           ...data,
-          attachments,
+          attachment: attachment.title || attachment.content || attachment.image_urls.length > 0
+            ? {
+                title: attachment.title,
+                content: attachment.content,
+                image_url: attachment.image_urls[0] || null,
+                is_public: attachment.is_public,
+              }
+            : null,
         }),
       });
 
@@ -534,20 +545,18 @@ export function DishForm({ dish, mode }: DishFormProps) {
         </CardContent>
       </Card>
 
-      {mode === "create" && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">附录</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <FormAttachmentList
-              attachments={attachments}
-              onChange={setAttachments}
-              disabled={loading}
-            />
-          </CardContent>
-        </Card>
-      )}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">附录</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <AttachmentForm
+            attachment={attachment}
+            onChange={setAttachment}
+            disabled={loading}
+          />
+        </CardContent>
+      </Card>
 
       <div className="flex gap-4">
         <Button type="submit" disabled={loading}>
