@@ -21,6 +21,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ImageUploader } from "@/components/image-uploader";
 import { AiAssistForm } from "@/components/ai-assist-form";
+import { MagicWandButton } from "@/components/magic-wand-button";
+import { FieldAssistDialog } from "@/components/field-assist-dialog";
 import type { Dish } from "@/lib/dishes/types";
 import type { DishDraft } from "@/lib/ai/dish-draft-schema";
 import slugify from "slugify";
@@ -60,6 +62,7 @@ export function DishForm({ dish, mode }: DishFormProps) {
   const [ingredientInput, setIngredientInput] = useState("");
   const [amountInput, setAmountInput] = useState("");
   const [tagInput, setTagInput] = useState("");
+  const [assistField, setAssistField] = useState<"description" | "story" | "tags" | null>(null);
 
   const {
     register,
@@ -162,6 +165,20 @@ export function DishForm({ dish, mode }: DishFormProps) {
     setValue("tags", draft.tags);
   };
 
+  const handleFieldAssistApply = (value: string | string[]) => {
+    if (assistField === "tags" && Array.isArray(value)) {
+      setValue("tags", value);
+    } else if (typeof value === "string") {
+      setValue(assistField!, value);
+    }
+  };
+
+  const getDishContext = () => ({
+    name: watch("name"),
+    cuisine: watch("cuisine"),
+    ingredients: watch("ingredients")?.map((i) => i.name) || [],
+  });
+
   const onSubmit = async (data: DishFormData) => {
     setLoading(true);
 
@@ -234,7 +251,13 @@ export function DishForm({ dish, mode }: DishFormProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">描述 *</Label>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="description">描述 *</Label>
+              <MagicWandButton
+                onClick={() => setAssistField("description")}
+                disabled={loading}
+              />
+            </div>
             <Textarea
               id="description"
               {...register("description")}
@@ -248,7 +271,13 @@ export function DishForm({ dish, mode }: DishFormProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="story">朋友的一句话</Label>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="story">朋友的一句话</Label>
+              <MagicWandButton
+                onClick={() => setAssistField("story")}
+                disabled={loading}
+              />
+            </div>
             <Textarea
               id="story"
               {...register("story")}
@@ -395,7 +424,13 @@ export function DishForm({ dish, mode }: DishFormProps) {
 
       <Card>
         <CardHeader>
-          <CardTitle>标签</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle>标签</CardTitle>
+            <MagicWandButton
+              onClick={() => setAssistField("tags")}
+              disabled={loading}
+            />
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex gap-2">
@@ -459,6 +494,17 @@ export function DishForm({ dish, mode }: DishFormProps) {
           取消
         </Button>
       </div>
+
+      {assistField && (
+        <FieldAssistDialog
+          open={!!assistField}
+          onOpenChange={(open) => !open && setAssistField(null)}
+          field={assistField}
+          currentValue={assistField === "tags" ? undefined : watch(assistField) || undefined}
+          dishContext={getDishContext()}
+          onApply={handleFieldAssistApply}
+        />
+      )}
     </form>
   );
 }
