@@ -41,7 +41,7 @@ export default function RootLayout({
       lang="zh-CN"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-amber-50/30">
+      <body className="min-h-full flex flex-col bg-white">
         {children}
         <Toaster />
         <PwaRegister />
