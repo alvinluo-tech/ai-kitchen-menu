@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2, Plus, X } from "lucide-react";
+import { Loader2, Plus, X, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -63,6 +63,7 @@ export function DishForm({ dish, mode }: DishFormProps) {
   const [amountInput, setAmountInput] = useState("");
   const [tagInput, setTagInput] = useState("");
   const [assistField, setAssistField] = useState<"description" | "story" | "tags" | null>(null);
+  const [editingIngredientIndex, setEditingIngredientIndex] = useState<number | null>(null);
 
   const {
     register,
@@ -109,17 +110,46 @@ export function DishForm({ dish, mode }: DishFormProps) {
   const addIngredient = () => {
     if (ingredientInput.trim()) {
       const currentIngredients = watch("ingredients");
-      setValue("ingredients", [
-        ...currentIngredients,
-        {
+
+      if (editingIngredientIndex !== null) {
+        // 编辑模式
+        const updated = [...currentIngredients];
+        updated[editingIngredientIndex] = {
           name: ingredientInput.trim(),
           amount: amountInput.trim() || undefined,
           is_required: true,
-        },
-      ]);
+        };
+        setValue("ingredients", updated);
+        setEditingIngredientIndex(null);
+      } else {
+        // 新增模式
+        setValue("ingredients", [
+          ...currentIngredients,
+          {
+            name: ingredientInput.trim(),
+            amount: amountInput.trim() || undefined,
+            is_required: true,
+          },
+        ]);
+      }
+
       setIngredientInput("");
       setAmountInput("");
     }
+  };
+
+  const editIngredient = (index: number) => {
+    const currentIngredients = watch("ingredients");
+    const item = currentIngredients[index];
+    setIngredientInput(item.name);
+    setAmountInput(item.amount || "");
+    setEditingIngredientIndex(index);
+  };
+
+  const cancelEditIngredient = () => {
+    setIngredientInput("");
+    setAmountInput("");
+    setEditingIngredientIndex(null);
   };
 
   const removeIngredient = (index: number) => {
@@ -128,6 +158,9 @@ export function DishForm({ dish, mode }: DishFormProps) {
       "ingredients",
       currentIngredients.filter((_, i) => i !== index)
     );
+    if (editingIngredientIndex === index) {
+      cancelEditIngredient();
+    }
   };
 
   const addTag = () => {
@@ -393,8 +426,13 @@ export function DishForm({ dish, mode }: DishFormProps) {
               className="w-32"
             />
             <Button type="button" variant="outline" onClick={addIngredient}>
-              <Plus className="h-4 w-4" />
+              {editingIngredientIndex !== null ? "更新" : <Plus className="h-4 w-4" />}
             </Button>
+            {editingIngredientIndex !== null && (
+              <Button type="button" variant="ghost" onClick={cancelEditIngredient}>
+                取消
+              </Button>
+            )}
           </div>
 
           {ingredients.length > 0 && (
@@ -402,12 +440,24 @@ export function DishForm({ dish, mode }: DishFormProps) {
               {ingredients.map((item, index) => (
                 <div
                   key={index}
-                  className="flex items-center gap-2 p-2 bg-gray-50 rounded"
+                  className={`flex items-center gap-2 p-2 rounded ${
+                    editingIngredientIndex === index
+                      ? "bg-orange-50 border border-orange-200"
+                      : "bg-gray-50"
+                  }`}
                 >
                   <span className="flex-1">{item.name}</span>
                   {item.amount && (
                     <span className="text-sm text-gray-500">{item.amount}</span>
                   )}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => editIngredient(index)}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
                   <Button
                     type="button"
                     variant="ghost"
