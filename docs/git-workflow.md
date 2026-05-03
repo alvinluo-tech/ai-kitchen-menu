@@ -35,13 +35,18 @@
    git push origin master
    ```
 
-6. **切回原分支**
+6. **清理并切回 dev**
    ```bash
-   git checkout <当前分支>
+   git checkout dev
+   git branch -d <当前分支>
+   git push origin --delete <当前分支>
    ```
+
+7. **等待下一步指示**
 
 ## 注意事项
 
 - Commit 消息使用英文，格式：`feat:`, `fix:`, `chore:`, `docs:` 等
 - 每次合并前必须通过 build
 - 合并失败时停止流程，让用户手动解决冲突
+- 功能分支合并完成后自动删除

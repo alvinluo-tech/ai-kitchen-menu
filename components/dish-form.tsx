@@ -20,7 +20,9 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ImageUploader } from "@/components/image-uploader";
+import { AiAssistForm } from "@/components/ai-assist-form";
 import type { Dish } from "@/lib/dishes/types";
+import type { DishDraft } from "@/lib/ai/dish-draft-schema";
 import slugify from "slugify";
 
 const dishSchema = z.object({
@@ -139,6 +141,27 @@ export function DishForm({ dish, mode }: DishFormProps) {
     );
   };
 
+  const handleDraftGenerated = (draft: DishDraft) => {
+    setValue("name", draft.name);
+    setValue("slug", slugify(draft.name, { lower: true, strict: true }));
+    setValue("description", draft.description);
+    setValue("story", draft.story);
+    setValue("cuisine", draft.cuisine);
+    setValue("spice_level", draft.spice_level);
+    setValue("difficulty", draft.difficulty);
+    setValue("cooking_time_minutes", draft.cooking_time_minutes);
+    setValue("servings", draft.servings);
+    setValue(
+      "ingredients",
+      draft.ingredients.map((item) => ({
+        name: item.name,
+        amount: item.amount || "",
+        is_required: item.is_required,
+      }))
+    );
+    setValue("tags", draft.tags);
+  };
+
   const onSubmit = async (data: DishFormData) => {
     setLoading(true);
 
@@ -167,6 +190,10 @@ export function DishForm({ dish, mode }: DishFormProps) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      {mode === "create" && (
+        <AiAssistForm onDraftGenerated={handleDraftGenerated} />
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle>基本信息</CardTitle>

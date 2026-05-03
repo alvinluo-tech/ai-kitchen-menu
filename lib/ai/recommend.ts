@@ -6,7 +6,7 @@ import {
 } from "@/lib/ai/schemas";
 import { getAvailableDishes } from "@/lib/dishes/queries";
 import { getCandidateDishes } from "@/lib/dishes/scoring";
-import { xiaomiModel } from "@/lib/ai/xiaomi";
+import { getAIProvider } from "@/lib/ai/provider";
 
 function extractJson(text: string) {
   const match = text.match(/```json\s*([\s\S]*?)```/);
@@ -20,8 +20,10 @@ function extractJson(text: string) {
 }
 
 export async function recommendDishesFromMessage(message: string) {
+  const { model } = getAIProvider();
+
   const { text: preferenceText } = await generateText({
-    model: xiaomiModel,
+    model,
     system: `
 你是一个菜品偏好解析助手。
 你的任务是从用户自然语言中提取偏好，输出 JSON。
@@ -86,7 +88,7 @@ export async function recommendDishesFromMessage(message: string) {
   const allowedDishIds = candidatePayload.map((dish) => dish.dishId);
 
   const { text: recommendationText } = await generateText({
-    model: xiaomiModel,
+    model,
     system: `
 你是一个温柔、自然、有朋友感的 AI 私厨菜单推荐助手。
 
