@@ -7,6 +7,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { createClient } from "@/lib/supabase/client";
+import { PwaInstallButton } from "@/components/pwa-install-button";
 
 const navItems = [
   { href: "/", label: "首页" },
@@ -74,6 +75,8 @@ export function SiteHeader() {
               {item.label}
             </Link>
           ))}
+
+          <PwaInstallButton />
 
           {loading ? (
             <div className="w-20 h-9" />

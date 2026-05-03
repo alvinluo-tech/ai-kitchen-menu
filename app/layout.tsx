@@ -1,6 +1,7 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
+import { PwaRegister } from "@/components/pwa-register";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -16,6 +17,18 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "AI 私厨电子菜单",
   description: "朋友会做的菜，AI 帮你推荐",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "私厨菜单",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#f97316",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
 };
 
 export default function RootLayout({
@@ -31,6 +44,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col bg-amber-50/30">
         {children}
         <Toaster />
+        <PwaRegister />
       </body>
     </html>
   );
