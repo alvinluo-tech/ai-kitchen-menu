@@ -17,7 +17,6 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
 } from "@/components/ui/select";
 
 type FieldAssistDialogProps = {
@@ -39,18 +38,26 @@ const fieldLabels = {
   tags: "风味标签",
 };
 
-const toneOptions = [
-  { value: "warm", label: "温暖" },
-  { value: "simple", label: "简洁" },
-  { value: "friendly", label: "朋友感" },
-  { value: "menu", label: "菜单风" },
-];
-
 const actionOptions = [
   { value: "rewrite", label: "改写得更自然" },
   { value: "expand", label: "扩写成完整内容" },
   { value: "shorten", label: "精简保留核心" },
 ];
+
+const toneOptions = [
+  { value: "warm", label: "温暖" },
+  { value: "simple", label: "简洁" },
+  { value: "friendly", label: "朋友感" },
+  { value: "menu", label: "菜单风" },
+] as const;
+
+function getActionLabel(value: string) {
+  return actionOptions.find((item) => item.value === value)?.label ?? "选择操作";
+}
+
+function getToneLabel(value: string) {
+  return toneOptions.find((item) => item.value === value)?.label ?? "选择风格";
+}
 
 export function FieldAssistDialog({
   open,
@@ -61,7 +68,7 @@ export function FieldAssistDialog({
   onApply,
 }: FieldAssistDialogProps) {
   const [keywords, setKeywords] = useState("");
-  const [action, setAction] = useState("generate");
+  const [action, setAction] = useState("rewrite");
   const [tone, setTone] = useState("friendly");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<string | string[] | null>(null);
@@ -127,9 +134,9 @@ export function FieldAssistDialog({
           {currentValue && (
             <div className="space-y-2">
               <Label>操作方式</Label>
-              <Select defaultValue="rewrite" onValueChange={(v) => v && setAction(v)}>
+              <Select value={action} onValueChange={(v) => v && setAction(v)}>
                 <SelectTrigger>
-                  <SelectValue />
+                  <span>{getActionLabel(action)}</span>
                 </SelectTrigger>
                 <SelectContent>
                   {actionOptions.map((opt) => (
@@ -161,9 +168,9 @@ export function FieldAssistDialog({
           {field !== "tags" && (
             <div className="space-y-2">
               <Label>语气风格</Label>
-              <Select defaultValue="friendly" onValueChange={(v) => v && setTone(v)}>
+              <Select value={tone} onValueChange={(v) => v && setTone(v)}>
                 <SelectTrigger>
-                  <SelectValue />
+                  <span>{getToneLabel(tone)}</span>
                 </SelectTrigger>
                 <SelectContent>
                   {toneOptions.map((opt) => (
