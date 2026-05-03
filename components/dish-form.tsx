@@ -513,18 +513,20 @@ export function DishForm({ dish, mode }: DishFormProps) {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">附录</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <FormAttachmentList
-            attachments={attachments}
-            onChange={setAttachments}
-            disabled={loading}
-          />
-        </CardContent>
-      </Card>
+      {mode === "create" && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">附录</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <FormAttachmentList
+              attachments={attachments}
+              onChange={setAttachments}
+              disabled={loading}
+            />
+          </CardContent>
+        </Card>
+      )}
 
       <div className="flex gap-4">
         <Button type="submit" disabled={loading}>
