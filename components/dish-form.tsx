@@ -175,6 +175,7 @@ export function DishForm({ dish, mode }: DishFormProps) {
 
   const getDishContext = () => ({
     name: watch("name"),
+    description: watch("description"),
     cuisine: watch("cuisine"),
     ingredients: watch("ingredients")?.map((i) => i.name) || [],
   });

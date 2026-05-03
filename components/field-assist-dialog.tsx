@@ -149,21 +149,31 @@ export function FieldAssistDialog({
             </div>
           )}
 
-          <div className="space-y-2">
-            <Label>关键词</Label>
-            <Textarea
-              placeholder={
-                field === "description"
-                  ? "例如：酸甜、快手、家常、适合配米饭"
-                  : field === "story"
-                  ? "例如：小时候妈妈常做、很温暖、下饭"
-                  : "例如：下饭、家常、快手"
-              }
-              value={keywords}
-              onChange={(e) => setKeywords(e.target.value)}
-              rows={2}
-            />
-          </div>
+          {field !== "tags" && (
+            <div className="space-y-2">
+              <Label>关键词</Label>
+              <Textarea
+                placeholder={
+                  field === "description"
+                    ? "例如：酸甜、快手、家常、适合配米饭"
+                    : "例如：小时候妈妈常做、很温暖、下饭"
+                }
+                value={keywords}
+                onChange={(e) => setKeywords(e.target.value)}
+                rows={2}
+              />
+            </div>
+          )}
+
+          {field === "tags" && dishContext?.name && (
+            <div className="p-3 bg-gray-50 rounded-lg text-sm text-gray-600">
+              <p>将根据菜名「{dishContext.name}」
+                {dishContext.cuisine && `、菜系「${dishContext.cuisine}」`}
+                {dishContext.ingredients?.length && `、食材「${dishContext.ingredients.slice(0, 5).join("、")}」`}
+                自动生成标签
+              </p>
+            </div>
+          )}
 
           {field !== "tags" && (
             <div className="space-y-2">

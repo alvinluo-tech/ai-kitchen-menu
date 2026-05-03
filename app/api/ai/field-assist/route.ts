@@ -10,6 +10,7 @@ const RequestSchema = z.object({
   keywords: z.string().optional(),
   dishContext: z.object({
     name: z.string().optional(),
+    description: z.string().optional(),
     cuisine: z.string().optional(),
     ingredients: z.array(z.string()).optional(),
   }).optional(),
@@ -74,12 +75,16 @@ export async function POST(request: Request) {
 
     const contextParts = [];
     if (dishContext?.name) contextParts.push(`菜名：${dishContext.name}`);
+    if (dishContext?.description) contextParts.push(`描述：${dishContext.description}`);
     if (dishContext?.cuisine) contextParts.push(`菜系：${dishContext.cuisine}`);
     if (dishContext?.ingredients?.length) contextParts.push(`食材：${dishContext.ingredients.join("、")}`);
 
     const contextStr = contextParts.length > 0 ? `\n${contextParts.join("\n")}` : "";
 
-    if (action === "generate" && keywords) {
+    if (field === "tags") {
+      // 标签根据表单内容自动生成
+      userPrompt = `请根据以下菜品信息生成风味标签（最多6个）：${contextStr}`;
+    } else if (action === "generate" && keywords) {
       userPrompt = `${fieldConfig.generate}\n关键词：${keywords}${contextStr}`;
     } else if (action === "rewrite" && currentValue) {
       userPrompt = `${fieldConfig.rewrite.replace("{tone}", toneMap[tone])}\n原文：${currentValue}${contextStr}`;
