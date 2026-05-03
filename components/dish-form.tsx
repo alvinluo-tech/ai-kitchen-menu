@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { ImageUploader } from "@/components/image-uploader";
 import type { Dish } from "@/lib/dishes/types";
 import slugify from "slugify";
 
@@ -27,7 +28,7 @@ const dishSchema = z.object({
   slug: z.string().min(1, "请输入 slug"),
   description: z.string().min(1, "请输入描述"),
   story: z.string().optional(),
-  image_url: z.string().url().optional().or(z.literal("")),
+  image_url: z.string().optional().or(z.literal("")),
   cuisine: z.string().optional(),
   spice_level: z.number().min(0).max(5),
   difficulty: z.enum(["easy", "medium", "hard"]),
@@ -90,6 +91,7 @@ export function DishForm({ dish, mode }: DishFormProps) {
 
   const ingredients = watch("ingredients");
   const tags = watch("tags");
+  const imageUrl = watch("image_url");
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -171,6 +173,15 @@ export function DishForm({ dish, mode }: DishFormProps) {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
+            <Label>菜品图片</Label>
+            <ImageUploader
+              value={imageUrl || undefined}
+              onChange={(url) => setValue("image_url", url)}
+              disabled={loading}
+            />
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="name">菜名 *</Label>
             <Input
               id="name"
@@ -215,15 +226,6 @@ export function DishForm({ dish, mode }: DishFormProps) {
               id="story"
               {...register("story")}
               placeholder="这道菜背后有什么故事？"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="image_url">图片 URL</Label>
-            <Input
-              id="image_url"
-              {...register("image_url")}
-              placeholder="https://..."
             />
           </div>
         </CardContent>
