@@ -1,10 +1,11 @@
 "use client";
 
+import { useRef } from "react";
 import { Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { ImageUploader } from "@/components/image-uploader";
+import { ImageUploader, type ImageUploaderHandle } from "@/components/image-uploader";
 
 export type FormAttachment = {
   title: string;
@@ -20,12 +21,16 @@ type AttachmentFormProps = {
 };
 
 export function AttachmentForm({ attachment, onChange, disabled }: AttachmentFormProps) {
+  const imageUploaderRef = useRef<ImageUploaderHandle>(null);
+
   const handleUpdate = (field: keyof FormAttachment, value: string | boolean | string[]) => {
     onChange({ ...attachment, [field]: value });
   };
 
   const handleAddImage = (url: string) => {
     handleUpdate("image_urls", [...attachment.image_urls, url]);
+    // 重置 ImageUploader
+    imageUploaderRef.current?.reset();
   };
 
   const handleRemoveImage = (index: number) => {
@@ -78,6 +83,7 @@ export function AttachmentForm({ attachment, onChange, disabled }: AttachmentFor
         )}
 
         <ImageUploader
+          ref={imageUploaderRef}
           value={undefined}
           onChange={handleAddImage}
           disabled={disabled}

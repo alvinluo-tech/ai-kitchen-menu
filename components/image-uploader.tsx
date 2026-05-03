@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, forwardRef, useImperativeHandle } from "react";
 import imageCompression from "browser-image-compression";
 import { Upload, X, Loader2, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,10 @@ type ImageUploaderProps = {
   disabled?: boolean;
 };
 
+export type ImageUploaderHandle = {
+  reset: () => void;
+};
+
 const COMPRESSION_OPTIONS = {
   maxSizeMB: 0.8,
   maxWidthOrHeight: 1600,
@@ -19,14 +23,26 @@ const COMPRESSION_OPTIONS = {
   fileType: "image/webp" as const,
 };
 
-export function ImageUploader({ value, onChange, disabled }: ImageUploaderProps) {
-  const [uploading, setUploading] = useState(false);
-  const [compressing, setCompressing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [preview, setPreview] = useState<string | null>(value ?? null);
-  const [originalSize, setOriginalSize] = useState<number | null>(null);
-  const [compressedSize, setCompressedSize] = useState<number | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+export const ImageUploader = forwardRef<ImageUploaderHandle, ImageUploaderProps>(
+  function ImageUploader({ value, onChange, disabled }, ref) {
+    const [uploading, setUploading] = useState(false);
+    const [compressing, setCompressing] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [preview, setPreview] = useState<string | null>(value ?? null);
+    const [originalSize, setOriginalSize] = useState<number | null>(null);
+    const [compressedSize, setCompressedSize] = useState<number | null>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    useImperativeHandle(ref, () => ({
+      reset: () => {
+        setPreview(null);
+        setOriginalSize(null);
+        setCompressedSize(null);
+        if (inputRef.current) {
+          inputRef.current.value = "";
+        }
+      },
+    }));
 
   const formatSize = (bytes: number) => {
     if (bytes < 1024) return `${bytes} B`;
@@ -162,4 +178,4 @@ export function ImageUploader({ value, onChange, disabled }: ImageUploaderProps)
       </p>
     </div>
   );
-}
+});
