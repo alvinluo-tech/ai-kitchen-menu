@@ -16,16 +16,24 @@ export function PwaInstallButton() {
   const [canInstall, setCanInstall] = useState(false);
   const [showIOSGuide, setShowIOSGuide] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
+  const [isStandalone, setIsStandalone] = useState(false);
 
   useEffect(() => {
+    // 检测是否已安装为 PWA
+    const standalone =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      (window.navigator as any).standalone === true;
+    setIsStandalone(standalone);
+
+    // 检测 iOS
+    const iosCheck = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    setIsIOS(iosCheck);
+
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e);
       setCanInstall(true);
     };
-
-    const iosCheck = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    setIsIOS(iosCheck);
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
 
@@ -33,6 +41,16 @@ export function PwaInstallButton() {
       window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
     };
   }, []);
+
+  // 已安装则不显示
+  if (isStandalone) {
+    return null;
+  }
+
+  // Android/Chrome 需要 beforeinstallprompt 触发才显示
+  if (!isIOS && !canInstall) {
+    return null;
+  }
 
   const handleInstall = async () => {
     if (isIOS) {
@@ -53,10 +71,6 @@ export function PwaInstallButton() {
     setDeferredPrompt(null);
   };
 
-  if (!canInstall && !isIOS) {
-    return null;
-  }
-
   return (
     <>
       <Button
@@ -66,7 +80,7 @@ export function PwaInstallButton() {
         className="gap-1 text-gray-500"
       >
         <Download className="h-4 w-4" />
-        <span className="hidden sm:inline">安装应用</span>
+        <span className="text-xs">安装</span>
       </Button>
 
       <Dialog open={showIOSGuide} onOpenChange={setShowIOSGuide}>
