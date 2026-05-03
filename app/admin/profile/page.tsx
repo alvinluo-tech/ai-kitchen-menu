@@ -152,11 +152,29 @@ export default function ProfileEditPage() {
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label>头像</Label>
-                  <ImageUploader
-                    value={avatarUrl || undefined}
-                    onChange={setAvatarUrl}
-                    disabled={saving}
-                  />
+                  {avatarUrl ? (
+                    <div className="relative">
+                      <img
+                        src={avatarUrl}
+                        alt="头像"
+                        className="w-full h-32 object-cover rounded-lg"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-2 right-2"
+                        onClick={() => setAvatarUrl("")}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <ImageUploader
+                      onUpload={setAvatarUrl}
+                      disabled={saving}
+                    />
+                  )}
                 </div>
 
                 <div className="space-y-2">

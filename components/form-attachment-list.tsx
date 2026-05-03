@@ -76,11 +76,29 @@ export function FormAttachmentList({ attachments, onChange, disabled }: FormAtta
 
           <div className="space-y-2">
             <Label>图片（可选）</Label>
-            <ImageUploader
-              value={attachment.image_url || undefined}
-              onChange={(url) => handleUpdate(index, "image_url", url)}
-              disabled={disabled}
-            />
+            {attachment.image_url ? (
+              <div className="relative">
+                <img
+                  src={attachment.image_url}
+                  alt="附录图片"
+                  className="w-full h-32 object-cover rounded-lg"
+                />
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="icon"
+                  className="absolute top-2 right-2"
+                  onClick={() => handleUpdate(index, "image_url", "")}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <ImageUploader
+                onUpload={(url) => handleUpdate(index, "image_url", url)}
+                disabled={disabled}
+              />
+            )}
           </div>
 
           <div className="flex items-center gap-2">
