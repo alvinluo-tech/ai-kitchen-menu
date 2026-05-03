@@ -2,13 +2,14 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
-import { ArrowLeft, Clock, Flame, Users, ChefHat } from "lucide-react";
+import { Clock, Flame, Users, ChefHat } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { PublicAttachments } from "@/components/public-attachments";
 import { getDishBySlug } from "@/lib/dishes/queries";
+import { BackButton } from "@/components/back-button";
 
 export const dynamic = "force-dynamic";
 
@@ -63,12 +64,7 @@ export default async function DishDetailPage({ params }: Props) {
       <SiteHeader />
       <main className="flex-1 py-6 md:py-8">
         <div className="container mx-auto px-4 max-w-4xl">
-          <Link href="/menu">
-            <Button variant="ghost" className="mb-4 md:mb-6 gap-2 text-sm">
-              <ArrowLeft className="h-4 w-4" />
-              返回菜单
-            </Button>
-          </Link>
+          <BackButton />
 
           <div className="bg-white rounded-2xl shadow-md overflow-hidden">
             {dish.image_url ? (
