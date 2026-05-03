@@ -63,7 +63,7 @@ export function AttachmentForm({ attachment, onChange, disabled }: AttachmentFor
         {attachment.image_urls.length > 0 && (
           <div className="grid grid-cols-2 gap-2">
             {attachment.image_urls.map((url, index) => (
-              <div key={index} className="relative group">
+              <div key={index} className="relative">
                 <img
                   src={url}
                   alt={`附录图片 ${index + 1}`}
@@ -73,7 +73,7 @@ export function AttachmentForm({ attachment, onChange, disabled }: AttachmentFor
                   type="button"
                   onClick={() => handleRemoveImage(index)}
                   disabled={disabled}
-                  className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1"
                 >
                   <Trash2 className="h-3 w-3" />
                 </button>
