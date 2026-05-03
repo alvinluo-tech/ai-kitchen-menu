@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -39,8 +39,42 @@ type ApiResponse = {
   error?: string;
 };
 
-const CACHE_KEY = "ai-recommend-result";
-const CACHE_MSG_KEY = "ai-recommend-message";
+type CacheEntry = {
+  message: string;
+  summary: string;
+  recommendations: Recommendation[];
+  createdAt: number;
+};
+
+const CACHE_KEY = "ai-kitchen-menu:recommendation:last";
+const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
+
+function readCache(): CacheEntry | null {
+  try {
+    const raw = sessionStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const entry: CacheEntry = JSON.parse(raw);
+    if (Date.now() - entry.createdAt > CACHE_TTL) {
+      sessionStorage.removeItem(CACHE_KEY);
+      return null;
+    }
+    return entry;
+  } catch {
+    return null;
+  }
+}
+
+function writeCache(entry: CacheEntry) {
+  try {
+    sessionStorage.setItem(CACHE_KEY, JSON.stringify(entry));
+  } catch {}
+}
+
+function clearCache() {
+  try {
+    sessionStorage.removeItem(CACHE_KEY);
+  } catch {}
+}
 
 export function AiRecommendForm() {
   const [message, setMessage] = useState("");
@@ -49,16 +83,18 @@ export function AiRecommendForm() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    try {
-      const cached = sessionStorage.getItem(CACHE_KEY);
-      const cachedMsg = sessionStorage.getItem(CACHE_MSG_KEY);
-      if (cached) {
-        setResult(JSON.parse(cached));
-      }
-      if (cachedMsg) {
-        setMessage(cachedMsg);
-      }
-    } catch {}
+    const cached = readCache();
+    if (cached) {
+      setMessage(cached.message);
+      setResult({ summary: cached.summary, recommendations: cached.recommendations });
+    }
+  }, []);
+
+  const handleClear = useCallback(() => {
+    setMessage("");
+    setResult(null);
+    setError(null);
+    clearCache();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -76,9 +112,7 @@ export function AiRecommendForm() {
     try {
       const response = await fetch("/api/recommend", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: message.trim() }),
       });
 
@@ -90,10 +124,12 @@ export function AiRecommendForm() {
       }
 
       setResult(data);
-      try {
-        sessionStorage.setItem(CACHE_KEY, JSON.stringify(data));
-        sessionStorage.setItem(CACHE_MSG_KEY, message.trim());
-      } catch {}
+      writeCache({
+        message: message.trim(),
+        summary: data.summary,
+        recommendations: data.recommendations,
+        createdAt: Date.now(),
+      });
     } catch {
       setError("AI 推荐暂时失败，请稍后再试。");
     } finally {
@@ -114,19 +150,26 @@ export function AiRecommendForm() {
               className="resize-none text-sm md:text-base"
               disabled={loading}
             />
-            <Button type="submit" disabled={loading} className="w-full gap-2">
-              {loading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  正在推荐...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="h-4 w-4" />
-                  帮我推荐
-                </>
+            <div className="flex gap-2">
+              <Button type="submit" disabled={loading} className="flex-1 gap-2">
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    正在推荐...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4" />
+                    帮我推荐
+                  </>
+                )}
+              </Button>
+              {result && !loading && (
+                <Button type="button" variant="outline" onClick={handleClear}>
+                  重新推荐
+                </Button>
               )}
-            </Button>
+            </div>
           </form>
         </CardContent>
       </Card>
