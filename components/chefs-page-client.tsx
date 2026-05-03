@@ -77,15 +77,17 @@ export function ChefsPageClient({ chefs }: ChefsPageClientProps) {
                   </div>
 
                   <CardContent className="p-4 md:p-6 -mt-8 relative">
-                    <div className="w-16 h-16 bg-white rounded-full border-4 border-white shadow-md flex items-center justify-center mb-3">
+                    <div className="w-16 h-16 bg-white rounded-full border-4 border-white shadow-md flex items-center justify-center mb-3 overflow-hidden">
                       {chef.avatar_url ? (
-                        <Image
-                          src={chef.avatar_url}
-                          alt={chef.display_name || "厨师"}
-                          width={48}
-                          height={48}
-                          className="rounded-full object-cover"
-                        />
+                        <div className="w-full h-full relative">
+                          <Image
+                            src={chef.avatar_url}
+                            alt={chef.display_name || "厨师"}
+                            fill
+                            className="object-cover"
+                            sizes="64px"
+                          />
+                        </div>
                       ) : (
                         <ChefHat className="h-8 w-8 text-orange-400" />
                       )}
