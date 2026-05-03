@@ -23,6 +23,7 @@ import { ImageUploader } from "@/components/image-uploader";
 import { AiAssistForm } from "@/components/ai-assist-form";
 import { MagicWandButton } from "@/components/magic-wand-button";
 import { FieldAssistDialog } from "@/components/field-assist-dialog";
+import { FormAttachmentList, type FormAttachment } from "@/components/form-attachment-list";
 import type { Dish } from "@/lib/dishes/types";
 import type { DishDraft } from "@/lib/ai/dish-draft-schema";
 import slugify from "slugify";
@@ -64,6 +65,7 @@ export function DishForm({ dish, mode }: DishFormProps) {
   const [tagInput, setTagInput] = useState("");
   const [assistField, setAssistField] = useState<"description" | "story" | "tags" | null>(null);
   const [editingIngredientIndex, setEditingIngredientIndex] = useState<number | null>(null);
+  const [attachments, setAttachments] = useState<FormAttachment[]>([]);
 
   const {
     register,
@@ -222,7 +224,10 @@ export function DishForm({ dish, mode }: DishFormProps) {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          ...data,
+          attachments: mode === "create" ? attachments : undefined,
+        }),
       });
 
       if (response.ok) {
@@ -505,6 +510,19 @@ export function DishForm({ dish, mode }: DishFormProps) {
               ))}
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">附录</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <FormAttachmentList
+            attachments={attachments}
+            onChange={setAttachments}
+            disabled={loading}
+          />
         </CardContent>
       </Card>
 
