@@ -13,13 +13,13 @@ export default function RecommendPage() {
   return (
     <>
       <SiteHeader />
-      <main className="flex-1 py-8">
+      <main className="flex-1 py-6 md:py-8">
         <div className="container mx-auto px-4 max-w-3xl">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold mb-4">不知道吃什么？</h1>
-            <p className="text-gray-600">
+          <div className="text-center mb-6 md:mb-8">
+            <h1 className="text-2xl md:text-3xl font-bold mb-3 md:mb-4">不知道吃什么？</h1>
+            <p className="text-gray-600 text-sm md:text-base">
               写下你想吃的味道、现有食材、忌口或今天的心情，
-              <br />
+              <br className="hidden sm:block" />
               AI 会从朋友的菜单里帮你挑几道。
             </p>
           </div>

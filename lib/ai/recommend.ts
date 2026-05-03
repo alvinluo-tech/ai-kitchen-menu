@@ -135,9 +135,9 @@ ${JSON.stringify(candidatePayload, null, 2)}
     const jsonStr = extractJson(recommendationText);
     const output = RecommendationSchema.parse(JSON.parse(jsonStr));
 
-    const safeRecommendations = output.recommendations.filter((item) =>
-      allowedDishIds.includes(item.dishId)
-    );
+    const safeRecommendations = output.recommendations
+      .filter((item) => allowedDishIds.includes(item.dishId))
+      .sort((a, b) => b.score - a.score);
 
     return {
       summary: output.summary,

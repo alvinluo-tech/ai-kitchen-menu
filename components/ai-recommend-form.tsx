@@ -82,15 +82,16 @@ export function AiRecommendForm() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       <Card>
-        <CardContent className="p-6">
-          <form onSubmit={handleSubmit} className="space-y-4">
+        <CardContent className="p-4 md:p-6">
+          <form onSubmit={handleSubmit} className="space-y-3 md:space-y-4">
             <Textarea
               placeholder="例如：我想吃一点辣的、下饭的，家里有土豆、鸡蛋和牛肉，不想吃太油，最好 40 分钟以内。"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              rows={4}
+              rows={3}
+              className="resize-none text-sm md:text-base"
               disabled={loading}
             />
             <Button type="submit" disabled={loading} className="w-full gap-2">
@@ -112,7 +113,7 @@ export function AiRecommendForm() {
 
       {error && (
         <Card className="border-red-200 bg-red-50">
-          <CardContent className="p-4">
+          <CardContent className="p-3 md:p-4">
             <p className="text-sm text-red-600">{error}</p>
           </CardContent>
         </Card>
@@ -120,28 +121,28 @@ export function AiRecommendForm() {
 
       {loading && (
         <div className="space-y-4">
-          <Skeleton className="h-20 w-full" />
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <Skeleton className="h-16 md:h-20 w-full" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             {[1, 2, 3].map((i) => (
-              <Skeleton key={i} className="h-80 rounded-2xl" />
+              <Skeleton key={i} className="h-72 md:h-80 rounded-2xl" />
             ))}
           </div>
         </div>
       )}
 
       {result && !loading && (
-        <div className="space-y-6">
+        <div className="space-y-4 md:space-y-6">
           {result.summary && (
             <Card className="bg-orange-50 border-orange-200">
-              <CardContent className="p-4">
-                <p className="text-gray-700">{result.summary}</p>
+              <CardContent className="p-3 md:p-4">
+                <p className="text-sm md:text-base text-gray-700">{result.summary}</p>
               </CardContent>
             </Card>
           )}
 
           {result.recommendations.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {result.recommendations.map((rec) => (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+              {result.recommendations.map((rec, index) => (
                 <DishCard
                   key={rec.dish.id}
                   name={rec.dish.name}
@@ -155,6 +156,7 @@ export function AiRecommendForm() {
                   reason={rec.reason}
                   matchedIngredients={rec.matchedIngredients}
                   missingIngredients={rec.missingIngredients}
+                  rank={index + 1}
                 />
               ))}
             </div>

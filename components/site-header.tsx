@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ChefHat, Menu, LayoutDashboard, LogOut } from "lucide-react";
+import { ChefHat, Menu, LayoutDashboard, LogOut, X } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { createClient } from "@/lib/supabase/client";
 
 const navItems = [
@@ -45,18 +45,20 @@ export function SiteHeader() {
     const supabase = createClient();
     await supabase.auth.signOut();
     setIsChef(false);
+    setOpen(false);
     router.push("/");
     router.refresh();
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-white/80 backdrop-blur-sm">
-      <div className="container mx-auto flex h-16 items-center justify-between px-4">
+    <header className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur-sm supports-[backdrop-filter]:bg-white/80">
+      <div className="container mx-auto flex h-14 md:h-16 items-center justify-between px-4">
         <Link href="/" className="flex items-center gap-2 font-bold text-lg">
-          <ChefHat className="h-6 w-6" />
+          <ChefHat className="h-6 w-6 text-orange-600" />
           <span>私厨菜单</span>
         </Link>
 
+        {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-6">
           {navItems.map((item) => (
             <Link
@@ -95,49 +97,71 @@ export function SiteHeader() {
           )}
         </nav>
 
+        {/* Mobile nav */}
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger render={<Button variant="ghost" size="icon" className="md:hidden" />}>
             <Menu className="h-5 w-5" />
           </SheetTrigger>
-          <SheetContent side="right" className="w-[300px]">
-            <div className="flex flex-col gap-4 mt-8">
-              {navItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setOpen(false)}
-                  className={`text-lg font-medium transition-colors hover:text-orange-600 ${
-                    pathname === item.href
-                      ? "text-orange-600"
-                      : "text-gray-600"
-                  }`}
-                >
-                  {item.label}
+          <SheetContent side="right" className="w-[280px] p-0">
+            <SheetTitle className="sr-only">导航菜单</SheetTitle>
+            <div className="flex flex-col h-full">
+              <div className="flex items-center justify-between p-4 border-b">
+                <Link href="/" className="flex items-center gap-2 font-bold" onClick={() => setOpen(false)}>
+                  <ChefHat className="h-5 w-5 text-orange-600" />
+                  <span>私厨菜单</span>
                 </Link>
-              ))}
+              </div>
 
-              {!loading && (
-                isChef ? (
-                  <div className="flex flex-col gap-2 mt-4">
-                    <Link href="/admin" onClick={() => setOpen(false)}>
-                      <Button variant={pathname.startsWith("/admin") ? "default" : "outline"} className="w-full gap-2">
-                        <LayoutDashboard className="h-4 w-4" />
-                        后台管理
-                      </Button>
+              <nav className="flex-1 p-4">
+                <div className="flex flex-col gap-1">
+                  {navItems.map((item) => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setOpen(false)}
+                      className={`flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                        pathname === item.href
+                          ? "bg-orange-50 text-orange-600"
+                          : "text-gray-600 hover:bg-gray-50"
+                      }`}
+                    >
+                      {item.label}
                     </Link>
-                    <Button variant="ghost" className="w-full text-gray-500" onClick={() => { handleLogout(); setOpen(false); }}>
-                      <LogOut className="h-4 w-4 mr-2" />
-                      退出登录
-                    </Button>
-                  </div>
-                ) : (
-                  <Link href="/login" onClick={() => setOpen(false)}>
-                    <Button variant="ghost" className="w-full text-gray-500">
-                      厨师入口
-                    </Button>
-                  </Link>
-                )
-              )}
+                  ))}
+                </div>
+
+                <div className="mt-6 pt-6 border-t">
+                  {!loading && (
+                    isChef ? (
+                      <div className="flex flex-col gap-2">
+                        <Link href="/admin" onClick={() => setOpen(false)}>
+                          <Button
+                            variant={pathname.startsWith("/admin") ? "default" : "outline"}
+                            className="w-full justify-start gap-2"
+                          >
+                            <LayoutDashboard className="h-4 w-4" />
+                            后台管理
+                          </Button>
+                        </Link>
+                        <Button
+                          variant="ghost"
+                          className="w-full justify-start text-gray-500"
+                          onClick={handleLogout}
+                        >
+                          <LogOut className="h-4 w-4 mr-2" />
+                          退出登录
+                        </Button>
+                      </div>
+                    ) : (
+                      <Link href="/login" onClick={() => setOpen(false)}>
+                        <Button variant="ghost" className="w-full justify-start text-gray-500">
+                          厨师入口
+                        </Button>
+                      </Link>
+                    )
+                  )}
+                </div>
+              </nav>
             </div>
           </SheetContent>
         </Sheet>

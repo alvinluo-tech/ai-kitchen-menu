@@ -45,10 +45,10 @@ export default async function DishDetailPage({ params }: Props) {
   return (
     <>
       <SiteHeader />
-      <main className="flex-1 py-8">
+      <main className="flex-1 py-6 md:py-8">
         <div className="container mx-auto px-4 max-w-4xl">
           <Link href="/menu">
-            <Button variant="ghost" className="mb-6 gap-2">
+            <Button variant="ghost" className="mb-4 md:mb-6 gap-2 text-sm">
               <ArrowLeft className="h-4 w-4" />
               返回菜单
             </Button>
@@ -68,38 +68,38 @@ export default async function DishDetailPage({ params }: Props) {
               </div>
             ) : (
               <div className="aspect-[16/9] bg-gradient-to-br from-orange-100 to-amber-50 flex items-center justify-center">
-                <ChefHat className="h-24 w-24 text-orange-200" />
+                <ChefHat className="h-16 w-16 md:h-24 md:w-24 text-orange-200" />
               </div>
             )}
 
-            <div className="p-6 md:p-8">
-              <h1 className="text-3xl font-bold mb-2">{dish.name}</h1>
-              <p className="text-gray-600 mb-4">{dish.description}</p>
+            <div className="p-4 md:p-8">
+              <h1 className="text-2xl md:text-3xl font-bold mb-2">{dish.name}</h1>
+              <p className="text-sm md:text-base text-gray-600 mb-4">{dish.description}</p>
 
               {dish.story && (
-                <div className="bg-orange-50 rounded-lg p-4 mb-6">
-                  <p className="text-sm text-gray-700 italic">
+                <div className="bg-orange-50 rounded-lg p-3 md:p-4 mb-4 md:mb-6">
+                  <p className="text-xs md:text-sm text-gray-700 italic">
                     &ldquo;{dish.story}&rdquo;
                   </p>
                 </div>
               )}
 
-              <div className="flex flex-wrap gap-4 mb-6 text-sm text-gray-600">
+              <div className="flex flex-wrap gap-3 md:gap-4 mb-4 md:mb-6 text-xs md:text-sm text-gray-600">
                 {dish.cooking_time_minutes && (
                   <div className="flex items-center gap-1">
-                    <Clock className="h-4 w-4" />
+                    <Clock className="h-3.5 w-3.5 md:h-4 md:w-4" />
                     <span>{dish.cooking_time_minutes}分钟</span>
                   </div>
                 )}
                 {dish.spice_level > 0 && (
                   <div className="flex items-center gap-1">
-                    <Flame className="h-4 w-4 text-orange-500" />
+                    <Flame className="h-3.5 w-3.5 md:h-4 md:w-4 text-orange-500" />
                     <span>辣度 {dish.spice_level}/5</span>
                   </div>
                 )}
                 {dish.servings && (
                   <div className="flex items-center gap-1">
-                    <Users className="h-4 w-4" />
+                    <Users className="h-3.5 w-3.5 md:h-4 md:w-4" />
                     <span>适合 {dish.servings} 人</span>
                   </div>
                 )}
@@ -114,11 +114,11 @@ export default async function DishDetailPage({ params }: Props) {
               </div>
 
               {dish.dish_tags && dish.dish_tags.length > 0 && (
-                <div className="mb-6">
-                  <h3 className="font-medium mb-2">风味标签</h3>
-                  <div className="flex flex-wrap gap-2">
+                <div className="mb-4 md:mb-6">
+                  <h3 className="font-medium mb-2 text-sm md:text-base">风味标签</h3>
+                  <div className="flex flex-wrap gap-1.5 md:gap-2">
                     {dish.dish_tags.map((tag: { id: string; tag: string }) => (
-                      <Badge key={tag.id} variant="secondary">
+                      <Badge key={tag.id} variant="secondary" className="text-xs">
                         {tag.tag}
                       </Badge>
                     ))}
@@ -128,7 +128,7 @@ export default async function DishDetailPage({ params }: Props) {
 
               {dish.dish_ingredients && dish.dish_ingredients.length > 0 && (
                 <div>
-                  <h3 className="font-medium mb-2">食材</h3>
+                  <h3 className="font-medium mb-2 text-sm md:text-base">食材</h3>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                     {dish.dish_ingredients.map((item: {
                       id: string;
@@ -137,7 +137,7 @@ export default async function DishDetailPage({ params }: Props) {
                     }) => (
                       <div
                         key={item.id}
-                        className="flex items-center justify-between p-2 bg-gray-50 rounded-lg text-sm"
+                        className="flex items-center justify-between p-2 bg-gray-50 rounded-lg text-xs md:text-sm"
                       >
                         <span>{item.ingredients.name}</span>
                         {item.amount && (

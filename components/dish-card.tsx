@@ -17,6 +17,7 @@ type DishCardProps = {
   reason?: string;
   matchedIngredients?: string[];
   missingIngredients?: string[];
+  rank?: number;
 };
 
 export function DishCard({
@@ -31,6 +32,7 @@ export function DishCard({
   reason,
   matchedIngredients = [],
   missingIngredients = [],
+  rank,
 }: DishCardProps) {
   return (
     <Card className="overflow-hidden rounded-2xl shadow-md hover:shadow-lg transition-shadow">
@@ -48,48 +50,55 @@ export function DishCard({
             <ChefHat className="h-16 w-16 text-orange-200" />
           </div>
         )}
+
+        {rank !== undefined && rank <= 3 && (
+          <div className="absolute top-2 left-2 w-7 h-7 bg-orange-500 text-white rounded-full flex items-center justify-center text-sm font-bold">
+            {rank}
+          </div>
+        )}
+
         {score !== undefined && (
-          <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm rounded-full px-3 py-1 text-sm font-medium text-orange-600">
-            匹配度 {score}%
+          <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm rounded-full px-2.5 py-1 text-xs md:text-sm font-medium text-orange-600">
+            {score}%
           </div>
         )}
       </div>
 
-      <CardContent className="p-4">
-        <h3 className="font-bold text-lg mb-1">{name}</h3>
-        <p className="text-sm text-gray-600 line-clamp-2 mb-3">{description}</p>
+      <CardContent className="p-3 md:p-4">
+        <h3 className="font-bold text-base md:text-lg mb-1 line-clamp-1">{name}</h3>
+        <p className="text-xs md:text-sm text-gray-600 line-clamp-2 mb-2 md:mb-3">{description}</p>
 
-        <div className="flex flex-wrap gap-2 mb-3">
+        <div className="flex flex-wrap gap-1.5 md:gap-2 mb-2 md:mb-3">
           {tags.slice(0, 3).map((tag) => (
-            <Badge key={tag} variant="secondary" className="text-xs">
+            <Badge key={tag} variant="secondary" className="text-[10px] md:text-xs px-1.5 md:px-2 py-0.5">
               {tag}
             </Badge>
           ))}
         </div>
 
-        <div className="flex items-center gap-4 text-sm text-gray-500">
+        <div className="flex items-center gap-3 md:gap-4 text-xs md:text-sm text-gray-500">
           {cookingTimeMinutes && (
             <div className="flex items-center gap-1">
-              <Clock className="h-4 w-4" />
+              <Clock className="h-3.5 w-3.5 md:h-4 md:w-4" />
               <span>{cookingTimeMinutes}分钟</span>
             </div>
           )}
           {spiceLevel > 0 && (
             <div className="flex items-center gap-1">
-              <Flame className="h-4 w-4 text-orange-500" />
+              <Flame className="h-3.5 w-3.5 md:h-4 md:w-4 text-orange-500" />
               <span>辣度 {spiceLevel}</span>
             </div>
           )}
         </div>
 
         {reason && (
-          <div className="mt-3 p-3 bg-orange-50 rounded-lg">
-            <p className="text-sm text-gray-700">{reason}</p>
+          <div className="mt-2 md:mt-3 p-2 md:p-3 bg-orange-50 rounded-lg">
+            <p className="text-xs md:text-sm text-gray-700 line-clamp-3">{reason}</p>
           </div>
         )}
 
         {(matchedIngredients.length > 0 || missingIngredients.length > 0) && (
-          <div className="mt-3 text-xs text-gray-500">
+          <div className="mt-2 md:mt-3 text-[10px] md:text-xs text-gray-500">
             {matchedIngredients.length > 0 && (
               <p className="text-green-600">
                 已有: {matchedIngredients.join("、")}
@@ -104,9 +113,9 @@ export function DishCard({
         )}
       </CardContent>
 
-      <CardFooter className="p-4 pt-0">
+      <CardFooter className="p-3 md:p-4 pt-0">
         <Link href={`/menu/${slug}`} className="w-full">
-          <Button variant="outline" className="w-full">
+          <Button variant="outline" className="w-full text-xs md:text-sm h-9 md:h-10">
             查看详情
           </Button>
         </Link>
