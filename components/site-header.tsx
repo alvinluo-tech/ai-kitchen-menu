@@ -40,8 +40,8 @@ export function SiteHeader() {
             </Link>
           ))}
           <Link href="/login">
-            <Button variant="outline" size="sm">
-              登录
+            <Button variant="ghost" size="sm" className="text-gray-500">
+              厨师入口
             </Button>
           </Link>
         </nav>
@@ -67,8 +67,8 @@ export function SiteHeader() {
                 </Link>
               ))}
               <Link href="/login" onClick={() => setOpen(false)}>
-                <Button variant="outline" className="w-full">
-                  登录
+                <Button variant="ghost" className="w-full text-gray-500">
+                  厨师入口
                 </Button>
               </Link>
             </div>

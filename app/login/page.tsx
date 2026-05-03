@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Loader2, Mail } from "lucide-react";
+import { Loader2, Mail, ChefHat } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -55,9 +55,14 @@ export default function LoginPage() {
       <main className="flex-1 flex items-center justify-center py-12">
         <Card className="w-full max-w-md mx-4">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl">登录</CardTitle>
+            <div className="flex justify-center mb-4">
+              <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
+                <ChefHat className="h-6 w-6 text-orange-600" />
+              </div>
+            </div>
+            <CardTitle className="text-2xl">厨师登录</CardTitle>
             <CardDescription>
-              使用邮箱登录，我们将发送一个登录链接给你
+              此页面仅限上传和管理菜品的厨师登录
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -95,6 +100,12 @@ export default function LoginPage() {
                 )}
               </Button>
             </form>
+
+            <div className="mt-6 pt-4 border-t">
+              <p className="text-xs text-gray-500 text-center">
+                普通用户无需登录，可直接浏览菜单和使用 AI 推荐
+              </p>
+            </div>
           </CardContent>
         </Card>
       </main>
