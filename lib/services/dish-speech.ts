@@ -39,22 +39,6 @@ export function buildDishSpeechText(dish: DishWithDetails): string {
     parts.push(dish.story);
   }
 
-  if (dish.dish_ingredients && dish.dish_ingredients.length > 0) {
-    const ingredientNames = dish.dish_ingredients
-      .slice(0, 6)
-      .map((item) => {
-        const name = item.ingredients.name;
-        return item.amount ? `${name}${item.amount}` : name;
-      })
-      .join("、");
-    parts.push(`主要食材包括${ingredientNames}`);
-  }
-
-  if (dish.dish_tags && dish.dish_tags.length > 0) {
-    const tags = dish.dish_tags.map((t) => t.tag).join("、");
-    parts.push(`风味标签：${tags}`);
-  }
-
   if (dish.spice_level > 0) {
     const spiceDesc =
       dish.spice_level <= 1
