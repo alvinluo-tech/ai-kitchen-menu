@@ -81,7 +81,8 @@ export function AudioPlayer({ dishId, chefHasVoice = false, className }: AudioPl
         setAudioUrl(data.audioUrl);
 
         // 创建并播放音频
-        const audio = new Audio(data.audioUrl);
+        const audio = new Audio();
+        audio.preload = "auto";
         audioRef.current = audio;
 
         // 注册为当前播放的音频
@@ -107,6 +108,14 @@ export function AudioPlayer({ dishId, chefHasVoice = false, className }: AudioPl
             globalStopCallback = null;
           }
         };
+
+        // 等待音频加载完成后播放
+        await new Promise<void>((resolve, reject) => {
+          audio.oncanplay = () => resolve();
+          audio.onerror = () => reject(new Error("音频加载失败"));
+          audio.src = data.audioUrl;
+          audio.load();
+        });
 
         setState("playing");
         console.log("[AudioPlayer] Playing audio...");
