@@ -1,18 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
-import { exec } from "child_process";
-import { promisify } from "util";
-import { writeFile, readFile, unlink } from "fs/promises";
-import { join } from "path";
-import { tmpdir } from "os";
 import {
   generateDefaultVoiceSpeech,
   generateChefCloneSpeech,
   type VoiceMode,
 } from "@/lib/ai/mimo-tts";
 import type { Dish } from "@/lib/dishes/types";
-
-const execAsync = promisify(exec);
 
 type DishWithDetails = Dish & {
   dish_ingredients?: {

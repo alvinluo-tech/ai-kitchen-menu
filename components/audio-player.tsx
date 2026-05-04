@@ -101,8 +101,13 @@ export function AudioPlayer({ dishId, chefHasVoice = false, className }: AudioPl
         };
         audio.onerror = (e) => {
           console.error("[AudioPlayer] Audio error:", e);
+          console.error("[AudioPlayer] Audio error details:", {
+            code: audio.error?.code,
+            message: audio.error?.message,
+            src: audio.src,
+          });
           setState("error");
-          setErrorMessage("音频播放失败");
+          setErrorMessage("音频播放失败: " + (audio.error?.message || "未知错误"));
           if (globalAudio === audio) {
             globalAudio = null;
             globalStopCallback = null;
@@ -111,8 +116,19 @@ export function AudioPlayer({ dishId, chefHasVoice = false, className }: AudioPl
 
         // 等待音频加载完成后播放
         await new Promise<void>((resolve, reject) => {
-          audio.oncanplay = () => resolve();
-          audio.onerror = () => reject(new Error("音频加载失败"));
+          audio.oncanplay = () => {
+            console.log("[AudioPlayer] Audio canplay");
+            resolve();
+          };
+          audio.onerror = (e) => {
+            console.error("[AudioPlayer] Load error:", e);
+            console.error("[AudioPlayer] Load error details:", {
+              code: audio.error?.code,
+              message: audio.error?.message,
+              src: audio.src,
+            });
+            reject(new Error("音频加载失败: " + (audio.error?.message || "未知错误")));
+          };
           audio.src = data.audioUrl;
           audio.load();
         });
