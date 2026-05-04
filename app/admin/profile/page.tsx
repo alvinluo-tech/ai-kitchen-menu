@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useOptimistic } from "react";
+import { useState, useEffect, useOptimistic, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Save, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -311,6 +311,8 @@ export default function ProfileEditPage() {
               </CardContent>
             </Card>
 
+            <VoiceSettingsCard />
+
             <Button onClick={handleSave} disabled={saving} className="w-full gap-2">
               {saving ? (
                 <>
@@ -331,3 +333,407 @@ export default function ProfileEditPage() {
     </>
   );
 }
+
+function VoiceSettingsCard() {
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [enabled, setEnabled] = useState(false);
+  const [hasSample, setHasSample] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [recorded, setRecorded] = useState(false);
+  const [recording, setRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [previewing, setPreviewing] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const previewAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const res = await fetch("/api/profile/voice");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.settings) {
+            setEnabled(data.settings.voice_clone_enabled || false);
+            setHasSample(!!data.settings.has_audio_sample);
+          }
+        }
+      } catch {
+        // 忽略错误
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchSettings();
+  }, []);
+
+  const uploadAudio = async (blob: Blob) => {
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", blob, "recording.wav");
+
+      const res = await fetch("/api/profile/voice/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "上传失败");
+
+      setHasSample(true);
+      setRecorded(true);
+      setPreviewUrl(null);
+
+      const { toast } = await import("sonner");
+      toast.success("声音样本已保存");
+    } catch (error) {
+      const { toast } = await import("sonner");
+      toast.error(error instanceof Error ? error.message : "处理失败");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await uploadAudio(file);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const convertWebmToWav = async (webmBlob: Blob): Promise<Blob> => {
+    const audioContext = new AudioContext();
+    const arrayBuffer = await webmBlob.arrayBuffer();
+    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+
+    // 转为 WAV
+    const wavBuffer = audioBufferToWav(audioBuffer);
+    return new Blob([wavBuffer], { type: "audio/wav" });
+  };
+
+  const audioBufferToWav = (buffer: AudioBuffer): ArrayBuffer => {
+    const numChannels = buffer.numberOfChannels;
+    const sampleRate = buffer.sampleRate;
+    const format = 1; // PCM
+    const bitDepth = 16;
+
+    const bytesPerSample = bitDepth / 8;
+    const blockAlign = numChannels * bytesPerSample;
+
+    const dataLength = buffer.length * numChannels * bytesPerSample;
+    const headerLength = 44;
+    const totalLength = headerLength + dataLength;
+
+    const arrayBuffer = new ArrayBuffer(totalLength);
+    const view = new DataView(arrayBuffer);
+
+    // WAV header
+    writeString(view, 0, "RIFF");
+    view.setUint32(4, totalLength - 8, true);
+    writeString(view, 8, "WAVE");
+    writeString(view, 12, "fmt ");
+    view.setUint32(16, 16, true);
+    view.setUint16(20, format, true);
+    view.setUint16(22, numChannels, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * blockAlign, true);
+    view.setUint16(32, blockAlign, true);
+    view.setUint16(34, bitDepth, true);
+    writeString(view, 36, "data");
+    view.setUint32(40, dataLength, true);
+
+    // 写入音频数据
+    const channels = [];
+    for (let i = 0; i < numChannels; i++) {
+      channels.push(buffer.getChannelData(i));
+    }
+
+    let offset = 44;
+    for (let i = 0; i < buffer.length; i++) {
+      for (let ch = 0; ch < numChannels; ch++) {
+        const sample = Math.max(-1, Math.min(1, channels[ch][i]));
+        view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+        offset += 2;
+      }
+    }
+
+    return arrayBuffer;
+  };
+
+  const writeString = (view: DataView, offset: number, str: string) => {
+    for (let i = 0; i < str.length; i++) {
+      view.setUint8(offset + i, str.charCodeAt(i));
+    }
+  };
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      chunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        const webmBlob = new Blob(chunksRef.current, { type: "audio/webm" });
+        // 转为 WAV 再上传
+        const wavBlob = await convertWebmToWav(webmBlob);
+        uploadAudio(wavBlob);
+      };
+
+      mediaRecorder.start();
+      setRecording(true);
+      setRecordingTime(0);
+      timerRef.current = setInterval(() => {
+        setRecordingTime((t) => t + 1);
+      }, 1000);
+    } catch {
+      const { toast } = await import("sonner");
+      toast.error("无法访问麦克风，请检查浏览器权限");
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && recording) {
+      mediaRecorderRef.current.stop();
+      setRecording(false);
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    }
+  };
+
+  const formatTime = (s: number) => {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return `${m}:${sec.toString().padStart(2, "0")}`;
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch("/api/profile/voice", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          voice_clone_enabled: enabled,
+        }),
+      });
+
+      if (!res.ok) throw new Error("保存失败");
+
+      const { toast } = await import("sonner");
+      toast.success("声音设置已保存");
+    } catch {
+      const { toast } = await import("sonner");
+      toast.error("保存声音设置失败");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handlePreview = async () => {
+    setPreviewing(true);
+    try {
+      const res = await fetch("/api/profile/voice/preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "试听失败");
+
+      setPreviewUrl(data.audioUrl);
+
+      if (previewAudioRef.current) {
+        previewAudioRef.current.pause();
+      }
+      const audio = new Audio(data.audioUrl);
+      previewAudioRef.current = audio;
+      audio.play();
+    } catch (error) {
+      const { toast } = await import("sonner");
+      toast.error(error instanceof Error ? error.message : "试听失败");
+    } finally {
+      setPreviewing(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-lg">声音播报设置</CardTitle>
+        <CardDescription>
+          配置菜品语音播报功能，支持默认声音和厨师声音克隆
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex items-center gap-3">
+          <input
+            type="checkbox"
+            id="voice_clone_enabled"
+            checked={enabled}
+            onChange={(e) => setEnabled(e.target.checked)}
+            className="rounded w-4 h-4"
+          />
+          <Label htmlFor="voice_clone_enabled" className="cursor-pointer">
+            启用厨师声音克隆
+          </Label>
+        </div>
+
+        {enabled && (
+          <>
+            <div className="space-y-3">
+              <Label>录制声音样本</Label>
+              <div className="flex items-center gap-2">
+                {!recording ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={startRecording}
+                    disabled={uploading}
+                    className="gap-1.5"
+                  >
+                    <span className="w-2 h-2 rounded-full bg-red-500" />
+                    开始录制
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    onClick={stopRecording}
+                    className="gap-1.5"
+                  >
+                    <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                    停止 ({formatTime(recordingTime)})
+                  </Button>
+                )}
+                {uploading && (
+                  <span className="text-xs text-gray-500 flex items-center gap-1">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    处理中...
+                  </span>
+                )}
+                {hasSample && !uploading && (
+                  <span className="text-xs text-green-600">
+                    {recorded ? "已保存" : "已有样本"}
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-gray-500">
+                点击录制，朗读一段文字（建议 5-15 秒）
+              </p>
+            </div>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs">
+                <span className="bg-white px-2 text-gray-400">或</span>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>上传音频文件</Label>
+              <div className="flex items-center gap-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".mp3,.wav,.m4a,.ogg,.flac,audio/*"
+                  onChange={handleUpload}
+                  className="hidden"
+                  id="voice-file-input"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading || recording}
+                  className="gap-1.5"
+                >
+                  选择音频文件
+                </Button>
+              </div>
+              <p className="text-xs text-gray-500">
+                支持 MP3、WAV、M4A 格式，最大 10MB
+              </p>
+            </div>
+          </>
+        )}
+
+        {enabled && hasSample && (
+          <div className="flex items-center gap-2 pt-2 border-t">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handlePreview}
+              disabled={previewing}
+              className="gap-1.5"
+            >
+              {previewing ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  生成中...
+                </>
+              ) : (
+                "试听克隆声音"
+              )}
+            </Button>
+            {previewUrl && (
+              <span className="text-xs text-green-600">播放中</span>
+            )}
+          </div>
+        )}
+
+        <div className="flex items-center gap-3 pt-2">
+          <Badge variant={enabled && hasSample ? "default" : "secondary"}>
+            {enabled && hasSample ? "厨师克隆已启用" : "使用默认声音"}
+          </Badge>
+        </div>
+
+        <Button onClick={handleSave} disabled={saving} variant="outline" className="gap-2">
+          {saving ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              保存中...
+            </>
+          ) : (
+            "保存声音设置"
+          )}
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+

@@ -10,6 +10,7 @@ import { SiteFooter } from "@/components/site-footer";
 import { PublicAttachments } from "@/components/public-attachments";
 import { getDishBySlug } from "@/lib/dishes/queries";
 import { BackButton } from "@/components/back-button";
+import { AudioPlayer } from "@/components/audio-player";
 
 export const dynamic = "force-dynamic";
 
@@ -46,6 +47,22 @@ export default async function DishDetailPage({ params }: Props) {
   };
 
   const chef = dish.profiles;
+
+  // 检查厨师是否有声音样本
+  let chefHasVoice = false;
+  if (chef) {
+    try {
+      const supabase = await createClient();
+      const { data: chefProfile } = await supabase
+        .from("profiles")
+        .select("voice_clone_enabled, audio_sample")
+        .eq("id", chef.id)
+        .single();
+      chefHasVoice = !!(chefProfile?.voice_clone_enabled && chefProfile?.audio_sample);
+    } catch {
+      // 忽略错误
+    }
+  }
 
   // 检查当前用户是否是菜品作者
   let isOwner = false;
@@ -122,6 +139,10 @@ export default async function DishDetailPage({ params }: Props) {
                   </p>
                 </div>
               )}
+
+              <div className="mb-4 md:mb-6">
+                <AudioPlayer dishId={dish.id} chefHasVoice={chefHasVoice} />
+              </div>
 
               <div className="flex flex-wrap gap-3 md:gap-4 mb-4 md:mb-6 text-xs md:text-sm text-gray-600">
                 {dish.cooking_time_minutes && (
