@@ -4,7 +4,8 @@ import { DishGrid } from "@/components/dish-grid";
 import { EmptyState } from "@/components/empty-state";
 import { getAvailableDishes } from "@/lib/dishes/queries";
 
-export const dynamic = "force-dynamic";
+// 使用ISR，每60秒重新验证一次
+export const revalidate = 60;
 
 export const metadata = {
   title: "全部菜单 | AI 私厨电子菜单",

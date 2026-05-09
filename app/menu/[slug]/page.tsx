@@ -3,7 +3,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
 import { Clock, Flame, Users, ChefHat, TrendingUp } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
@@ -15,7 +14,8 @@ import { BackButton } from "@/components/back-button";
 import { AudioPlayer } from "@/components/audio-player";
 import { AddToCartButton } from "@/components/add-to-cart-button";
 
-export const dynamic = "force-dynamic";
+// 使用ISR，每60秒重新验证一次
+export const revalidate = 60;
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -53,33 +53,35 @@ export default async function DishDetailPage({ params }: Props) {
 
   const imageUrls = getDishImageUrls(dish.image_url);
 
-  // 检查厨师是否有声音样本
-  let chefHasVoice = false;
-  if (chef) {
-    try {
-      const supabase = await createClient();
-      const { data: chefProfile } = await supabase
-        .from("profiles")
-        .select("voice_clone_enabled, audio_sample")
-        .eq("id", chef.id)
-        .single();
-      chefHasVoice = !!(chefProfile?.voice_clone_enabled && chefProfile?.audio_sample);
-    } catch {
-      // 忽略错误
-    }
-  }
+  // 并行检查厨师声音状态和当前用户身份
+  const supabase = await createClient();
+  const [chefVoiceResult, userResult] = await Promise.allSettled([
+    chef
+      ? supabase
+          .from("profiles")
+          .select("voice_clone_enabled, audio_sample")
+          .eq("id", chef.id)
+          .single()
+      : Promise.resolve(null),
+    supabase.auth.getUser(),
+  ]);
 
-  // 检查当前用户是否是菜品作者
-  let isOwner = false;
-  try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user && dish.created_by === user.id) {
-      isOwner = true;
+  const chefHasVoice = (() => {
+    if (!chef || chefVoiceResult.status !== "rejected") return false;
+    // Promise.allSettled returns status "fulfilled" even for Supabase errors
+    // so we check the actual data
+    if (chefVoiceResult.status === "fulfilled" && chefVoiceResult.value) {
+      const data = chefVoiceResult.value.data;
+      return !!(data?.voice_clone_enabled && data?.audio_sample);
     }
-  } catch (error) {
-    // 忽略错误，isOwner 保持 false
-  }
+    return false;
+  })();
+
+  const isOwner = (() => {
+    if (userResult.status !== "fulfilled") return false;
+    const user = userResult.value.data?.user;
+    return !!(user && dish.created_by === user.id);
+  })();
 
   return (
     <>

@@ -1,5 +1,4 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import Image from "next/image";
 import { Clock, Award, ChefHat } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -8,22 +7,64 @@ import { SiteFooter } from "@/components/site-footer";
 import { DishGrid } from "@/components/dish-grid";
 import { createClient } from "@/lib/supabase/server";
 import { BackButton } from "@/components/back-button";
+import { cache } from "react";
 
-export const dynamic = "force-dynamic";
+// 使用ISR，每60秒重新验证一次
+export const revalidate = 60;
 
 type Props = {
   params: Promise<{ id: string }>;
 };
 
-export async function generateMetadata({ params }: Props) {
-  const { id } = await params;
+// 缓存厨师数据获取函数，避免在generateMetadata和页面组件中重复查询
+const getChefData = cache(async (id: string) => {
   const supabase = await createClient();
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("display_name")
-    .eq("id", id)
-    .single();
+  // 并行获取厨师资料和菜品
+  const [profileResult, dishesResult] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("id, display_name, avatar_url, bio, specialties, years_of_cooking, social_link")
+      .eq("id", id)
+      .single(),
+    supabase
+      .from("dishes")
+      .select(`
+        *,
+        dish_ingredients (
+          id,
+          amount,
+          is_required,
+          ingredients (
+            id,
+            name,
+            category
+          )
+        ),
+        dish_tags (
+          id,
+          tag
+        ),
+        profiles!created_by (
+          id,
+          display_name,
+          avatar_url
+        )
+      `)
+      .eq("created_by", id)
+      .eq("is_available", true)
+      .order("created_at", { ascending: false }),
+  ]);
+
+  return {
+    profile: profileResult.data,
+    dishes: dishesResult.data,
+  };
+});
+
+export async function generateMetadata({ params }: Props) {
+  const { id } = await params;
+  const { profile } = await getChefData(id);
 
   if (!profile) {
     return { title: "厨师不存在" };
@@ -37,46 +78,11 @@ export async function generateMetadata({ params }: Props) {
 
 export default async function ChefDetailPage({ params }: Props) {
   const { id } = await params;
-  const supabase = await createClient();
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("id, display_name, avatar_url, bio, specialties, years_of_cooking, social_link")
-    .eq("id", id)
-    .single();
+  const { profile, dishes } = await getChefData(id);
 
   if (!profile) {
     notFound();
   }
-
-  // 获取厨师的菜品
-  const { data: dishes } = await supabase
-    .from("dishes")
-    .select(`
-      *,
-      dish_ingredients (
-        id,
-        amount,
-        is_required,
-        ingredients (
-          id,
-          name,
-          category
-        )
-      ),
-      dish_tags (
-        id,
-        tag
-      ),
-      profiles!created_by (
-        id,
-        display_name,
-        avatar_url
-      )
-    `)
-    .eq("created_by", id)
-    .eq("is_available", true)
-    .order("created_at", { ascending: false });
 
   return (
     <>

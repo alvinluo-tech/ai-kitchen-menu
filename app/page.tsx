@@ -6,7 +6,8 @@ import { SiteFooter } from "@/components/site-footer";
 import { DishGrid } from "@/components/dish-grid";
 import { getAvailableDishes } from "@/lib/dishes/queries";
 
-export const dynamic = "force-dynamic";
+// 使用ISR，每60秒重新验证一次
+export const revalidate = 60;
 
 export default async function HomePage() {
   let dishes = [];

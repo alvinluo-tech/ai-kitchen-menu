@@ -4,7 +4,7 @@ import { Plus, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/lib/cart-context";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useCallback, useMemo } from "react";
 
 type AddToCartButtonProps = {
   dishId: string;
@@ -26,14 +26,14 @@ export function AddToCartButton({
   const { items, addItem } = useCart();
   const [added, setAdded] = useState(false);
 
-  const inCart = items.find((i) => i.dishId === dishId);
+  const inCart = useMemo(() => items.find((i) => i.dishId === dishId), [items, dishId]);
   const quantity = inCart?.quantity ?? 0;
 
-  const handleAdd = () => {
+  const handleAdd = useCallback(() => {
     addItem({ dishId, name, slug, imageUrl: imageUrl ?? null });
     setAdded(true);
     setTimeout(() => setAdded(false), 1000);
-  };
+  }, [addItem, dishId, name, slug, imageUrl]);
 
   if (variant === "icon") {
     return (

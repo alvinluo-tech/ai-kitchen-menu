@@ -23,13 +23,10 @@ export function DishImageGallery({ images, dishName }: DishImageGalleryProps) {
   if (images.length === 1) {
     return (
       <div className="aspect-[16/9] relative rounded-t-2xl overflow-hidden">
-        <Image
+        <img
           src={images[0]}
           alt={dishName}
-          fill
-          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 1200px"
-          className="object-cover"
-          priority
+          className="absolute inset-0 w-full h-full object-cover"
         />
       </div>
     );
@@ -38,13 +35,10 @@ export function DishImageGallery({ images, dishName }: DishImageGalleryProps) {
   return (
     <div>
       <div className="aspect-[16/9] relative overflow-hidden">
-        <Image
+        <img
           src={images[selectedIndex]}
           alt={`${dishName} - 图片 ${selectedIndex + 1}`}
-          fill
-          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 1200px"
-          className="object-cover"
-          priority
+          className="absolute inset-0 w-full h-full object-cover"
         />
       </div>
 

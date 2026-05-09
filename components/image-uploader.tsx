@@ -14,10 +14,10 @@ type ImageUploaderProps = {
 const ACCEPT = "image/jpeg,image/png,image/webp,image/heic,image/heif";
 
 const COMPRESSION_OPTIONS = {
-  maxSizeMB: 0.8,
-  maxWidthOrHeight: 1200,
+  maxSizeMB: 2,
+  maxWidthOrHeight: 1920,
   useWebWorker: true,
-  initialQuality: 0.7,
+  initialQuality: 0.85,
   fileType: "image/webp" as const,
 };
 

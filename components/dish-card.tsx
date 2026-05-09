@@ -7,6 +7,7 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AddToCartButton } from "@/components/add-to-cart-button";
+import { memo } from "react";
 
 type DishCardProps = {
   dishId: string;
@@ -30,7 +31,7 @@ type DishCardProps = {
   } | null;
 };
 
-export function DishCard({
+export const DishCard = memo(function DishCard({
   dishId,
   name,
   slug,
@@ -174,4 +175,4 @@ export function DishCard({
       </CardFooter>
     </Card>
   );
-}
+});

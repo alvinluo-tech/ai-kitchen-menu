@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { DishCard } from "./dish-card";
 import type { Dish } from "@/lib/dishes/types";
 import { getDishImageUrl } from "@/lib/dishes/types";
@@ -6,7 +7,7 @@ type DishGridProps = {
   dishes: Dish[];
 };
 
-export function DishGrid({ dishes }: DishGridProps) {
+export const DishGrid = memo(function DishGrid({ dishes }: DishGridProps) {
   return (
     <div className="grid grid-cols-1 gap-4 md:gap-6 md:grid-cols-2 lg:grid-cols-3">
       {dishes.map((dish) => (
@@ -26,4 +27,4 @@ export function DishGrid({ dishes }: DishGridProps) {
       ))}
     </div>
   );
-}
+});

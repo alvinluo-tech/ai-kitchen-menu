@@ -44,7 +44,7 @@ const DishSchema = z.object({
 });
 
 async function generateUniqueSlug(supabase: ReturnType<typeof createClient> extends Promise<infer T> ? T : never, name: string): Promise<string> {
-  let baseSlug = generateSlug(name);
+  const baseSlug = generateSlug(name);
   let slug = baseSlug;
   let counter = 2;
 

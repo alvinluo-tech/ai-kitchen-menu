@@ -1,7 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { ChefsPageClient } from "@/components/chefs-page-client";
 
-export const dynamic = "force-dynamic";
+// 使用ISR，每60秒重新验证一次
+export const revalidate = 60;
 
 export const metadata = {
   title: "厨师风采 | AI 私厨电子菜单",
