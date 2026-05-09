@@ -12,6 +12,7 @@ export function DishGrid({ dishes }: DishGridProps) {
       {dishes.map((dish) => (
         <DishCard
           key={dish.id}
+          dishId={dish.id}
           name={dish.name}
           slug={dish.slug}
           imageUrl={getDishImageUrl(dish.image_url)}
@@ -19,6 +20,7 @@ export function DishGrid({ dishes }: DishGridProps) {
           tags={dish.dish_tags?.map((tag) => tag.tag) ?? []}
           cookingTimeMinutes={dish.cooking_time_minutes}
           spiceLevel={dish.spice_level}
+          orderCount={dish.order_count}
           chef={dish.profiles}
         />
       ))}

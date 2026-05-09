@@ -20,6 +20,7 @@ type Recommendation = {
     cuisine?: string | null;
     spice_level: number;
     cooking_time_minutes?: number | null;
+    order_count?: number;
     dish_tags?: { id: string; tag: string }[];
     dish_ingredients?: {
       id: string;
@@ -200,6 +201,7 @@ export function AiRecommendForm() {
               {result.recommendations.map((rec, index) => (
                 <DishCard
                   key={rec.dish.id}
+                  dishId={rec.dish.id}
                   name={rec.dish.name}
                   slug={rec.dish.slug}
                   imageUrl={getDishImageUrl(rec.dish.image_url)}
@@ -207,6 +209,7 @@ export function AiRecommendForm() {
                   tags={rec.dish.dish_tags?.map((tag) => tag.tag) ?? []}
                   cookingTimeMinutes={rec.dish.cooking_time_minutes}
                   spiceLevel={rec.dish.spice_level}
+                  orderCount={rec.dish.order_count}
                   score={rec.score}
                   reason={rec.reason}
                   matchedIngredients={rec.matchedIngredients}

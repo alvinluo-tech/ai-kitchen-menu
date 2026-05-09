@@ -51,6 +51,7 @@ export type Dish = {
   cooking_time_minutes?: number | null;
   servings?: string | null;
   is_available: boolean;
+  order_count: number;
   created_by?: string | null;
   created_at: string;
   updated_at: string;

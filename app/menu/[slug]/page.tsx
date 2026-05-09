@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
-import { Clock, Flame, Users, ChefHat } from "lucide-react";
+import { Clock, Flame, Users, ChefHat, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { SiteHeader } from "@/components/site-header";
@@ -13,6 +13,7 @@ import { getDishImageUrls } from "@/lib/dishes/types";
 import { DishImageGallery } from "@/components/dish-image-gallery";
 import { BackButton } from "@/components/back-button";
 import { AudioPlayer } from "@/components/audio-player";
+import { AddToCartButton } from "@/components/add-to-cart-button";
 
 export const dynamic = "force-dynamic";
 
@@ -121,6 +122,15 @@ export default async function DishDetailPage({ params }: Props) {
               <h1 className="text-2xl md:text-3xl font-bold mb-2">{dish.name}</h1>
               <p className="text-sm md:text-base text-gray-600 mb-4">{dish.description}</p>
 
+              <div className="mb-4">
+                <AddToCartButton
+                  dishId={dish.id}
+                  name={dish.name}
+                  slug={dish.slug}
+                  imageUrl={imageUrls[0] ?? null}
+                />
+              </div>
+
               {dish.story && (
                 <div className="bg-orange-50 rounded-lg p-3 md:p-4 mb-4 md:mb-6">
                   <p className="text-xs md:text-sm text-gray-700 italic">
@@ -158,6 +168,12 @@ export default async function DishDetailPage({ params }: Props) {
                 {dish.cuisine && (
                   <div className="flex items-center gap-1">
                     <span>菜系: {dish.cuisine}</span>
+                  </div>
+                )}
+                {dish.order_count > 0 && (
+                  <div className="flex items-center gap-1 text-orange-600">
+                    <TrendingUp className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                    <span>{dish.order_count} 次点单</span>
                   </div>
                 )}
               </div>

@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ChefHat, Menu, LayoutDashboard, LogOut, X } from "lucide-react";
+import { ChefHat, Menu, LayoutDashboard, LogOut, X, ShoppingCart } from "lucide-react";
+import { CartSheet } from "@/components/cart-sheet";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
@@ -78,6 +79,8 @@ export function SiteHeader() {
 
           <PwaInstallButton />
 
+          <CartSheet />
+
           {loading ? (
             <div className="w-20 h-9" />
           ) : isChef ? (
@@ -89,9 +92,15 @@ export function SiteHeader() {
                 </Button>
               </Link>
               <Link href="/admin">
-                <Button variant={pathname.startsWith("/admin") ? "default" : "outline"} size="sm" className="gap-1">
+                <Button variant={pathname.startsWith("/admin") && !pathname.startsWith("/admin/orders") ? "default" : "outline"} size="sm" className="gap-1">
                   <LayoutDashboard className="h-4 w-4" />
                   后台管理
+                </Button>
+              </Link>
+              <Link href="/admin/orders">
+                <Button variant={pathname.startsWith("/admin/orders") ? "default" : "outline"} size="sm" className="gap-1">
+                  <ShoppingCart className="h-4 w-4" />
+                  订单
                 </Button>
               </Link>
               <Button variant="ghost" size="sm" onClick={handleLogout}>
@@ -108,7 +117,9 @@ export function SiteHeader() {
         </nav>
 
         {/* Mobile nav */}
-        <Sheet open={open} onOpenChange={setOpen}>
+        <div className="flex items-center gap-1 md:hidden">
+          <CartSheet />
+          <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger render={<Button variant="ghost" size="icon" className="md:hidden" />}>
             <Menu className="h-5 w-5" />
           </SheetTrigger>
@@ -151,9 +162,15 @@ export function SiteHeader() {
                           </Button>
                         </Link>
                         <Link href="/admin" onClick={() => setOpen(false)}>
-                          <Button variant={pathname.startsWith("/admin") ? "default" : "outline"} className="w-full justify-start gap-2">
+                          <Button variant={pathname.startsWith("/admin") && !pathname.startsWith("/admin/orders") ? "default" : "outline"} className="w-full justify-start gap-2">
                             <LayoutDashboard className="h-4 w-4" />
                             后台管理
+                          </Button>
+                        </Link>
+                        <Link href="/admin/orders" onClick={() => setOpen(false)}>
+                          <Button variant={pathname.startsWith("/admin/orders") ? "default" : "outline"} className="w-full justify-start gap-2">
+                            <ShoppingCart className="h-4 w-4" />
+                            订单管理
                           </Button>
                         </Link>
                         <Button
@@ -178,6 +195,7 @@ export function SiteHeader() {
             </div>
           </SheetContent>
         </Sheet>
+        </div>
       </div>
     </header>
   );
