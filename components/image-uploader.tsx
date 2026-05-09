@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import imageCompression from "browser-image-compression";
 import { Upload, Loader2, CheckCircle, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -21,24 +21,69 @@ const COMPRESSION_OPTIONS = {
   fileType: "image/webp" as const,
 };
 
+type TaskStatus = "compressing" | "uploading" | "done" | "error";
+
 type FileTask = {
   id: string;
   name: string;
-  status: "compressing" | "uploading" | "done" | "error";
-  progress: number; // 0-100 for compression
+  status: TaskStatus;
+  progress: number;
+  createdAt: number;
   error?: string;
 };
+
+function genId(): string {
+  return crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
+}
+
+// Cleanup: remove done/error tasks older than this
+const TASK_CLEANUP_MS = 30_000;
+const MAX_VISIBLE_TASKS = 20;
 
 export function ImageUploader({ onUpload, disabled }: ImageUploaderProps) {
   const [tasks, setTasks] = useState<FileTask[]>([]);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Stable callback ref to avoid useCallback churn
+  const onUploadRef = useRef(onUpload);
+  onUploadRef.current = onUpload;
+
+  // Purge old completed tasks periodically
+  useEffect(() => {
+    if (tasks.length === 0) return;
+    const now = Date.now();
+    const hasStale = tasks.some(
+      (t) =>
+        (t.status === "done" || t.status === "error") &&
+        now - t.createdAt > TASK_CLEANUP_MS
+    );
+    if (!hasStale) return;
+
+    const timer = setTimeout(() => {
+      setTasks((prev) => {
+        const cutoff = Date.now() - TASK_CLEANUP_MS;
+        const kept = prev.filter(
+          (t) =>
+            (t.status !== "done" && t.status !== "error") ||
+            t.createdAt > cutoff
+        );
+        return kept.slice(-MAX_VISIBLE_TASKS);
+      });
+    }, TASK_CLEANUP_MS);
+    return () => clearTimeout(timer);
+  }, [tasks]);
+
   const compressFile = useCallback(
     async (file: File, task: FileTask): Promise<File> => {
+      let lastUpdate = 0;
       return imageCompression(file, {
         ...COMPRESSION_OPTIONS,
         onProgress: (pct: number) => {
+          const now = Date.now();
+          // Throttle to ~4 updates/sec to avoid excessive re-renders
+          if (now - lastUpdate < 250) return;
+          lastUpdate = now;
           setTasks((prev) =>
             prev.map((t) =>
               t.id === task.id ? { ...t, progress: Math.round(pct) } : t
@@ -51,11 +96,9 @@ export function ImageUploader({ onUpload, disabled }: ImageUploaderProps) {
   );
 
   const uploadFile = useCallback(
-    async (file: File, task: FileTask): Promise<string> => {
+    async (file: File): Promise<string> => {
       const supabase = createClient();
-      const timestamp = Date.now();
-      const random = Math.random().toString(36).substring(2, 8);
-      const filePath = `dishes/${timestamp}-${random}.webp`;
+      const filePath = `dishes/${genId()}.webp`;
 
       const { error: uploadError } = await supabase.storage
         .from("dish-images")
@@ -80,28 +123,36 @@ export function ImageUploader({ onUpload, disabled }: ImageUploaderProps) {
   const processFile = useCallback(
     async (file: File, task: FileTask) => {
       try {
-        // Compress
+        // Normalize: iOS Safari returns empty MIME for HEIC — create new File with proper type
+        const normalizedFile =
+          file.type || !file.name.includes(".")
+            ? file
+            : new File([file], file.name, {
+                type: `image/${file.name.split(".").pop()?.toLowerCase()}`,
+              });
+
         setTasks((prev) =>
           prev.map((t) =>
             t.id === task.id ? { ...t, status: "compressing" as const } : t
           )
         );
-        const compressed = await compressFile(file, task);
+        const compressed = await compressFile(normalizedFile, task);
 
-        // Upload
         setTasks((prev) =>
           prev.map((t) =>
             t.id === task.id ? { ...t, status: "uploading" as const } : t
           )
         );
-        const url = await uploadFile(compressed, task);
+        const url = await uploadFile(compressed);
 
         setTasks((prev) =>
           prev.map((t) =>
-            t.id === task.id ? { ...t, status: "done" as const, progress: 100 } : t
+            t.id === task.id
+              ? { ...t, status: "done" as const, progress: 100 }
+              : t
           )
         );
-        onUpload(url);
+        onUploadRef.current(url);
       } catch (err) {
         setTasks((prev) =>
           prev.map((t) =>
@@ -116,34 +167,35 @@ export function ImageUploader({ onUpload, disabled }: ImageUploaderProps) {
         );
       }
     },
-    [compressFile, uploadFile, onUpload]
+    [compressFile, uploadFile]
   );
 
   const handleFiles = useCallback(
     (files: FileList) => {
-      const fileArray = Array.from(files).filter((f) =>
-        f.type.startsWith("image/")
-      );
+      const fileArray = Array.from(files).filter((f) => {
+        if (f.type.startsWith("image/")) return true;
+        // iOS Safari returns empty MIME for HEIC — fallback to extension
+        const ext = f.name.split(".").pop()?.toLowerCase();
+        return ext ? ["heic", "heif", "jpg", "jpeg", "png", "webp"].includes(ext) : false;
+      });
 
       if (fileArray.length === 0) {
         setError("未选择有效的图片文件");
         return;
       }
 
-      if (files.length !== fileArray.length) {
-        setError("已跳过非图片文件");
-      }
-
       setError(null);
 
-      const newTasks: FileTask[] = fileArray.map((f, i) => ({
-        id: `${Date.now()}-${i}`,
+      const now = Date.now();
+      const newTasks: FileTask[] = fileArray.map((f) => ({
+        id: genId(),
         name: f.name,
         status: "compressing" as const,
         progress: 0,
+        createdAt: now,
       }));
 
-      setTasks((prev) => [...prev, ...newTasks]);
+      setTasks((prev) => prev.concat(newTasks));
 
       // Process all files in parallel
       fileArray.forEach((file, i) => {
@@ -163,15 +215,19 @@ export function ImageUploader({ onUpload, disabled }: ImageUploaderProps) {
     }
   };
 
-  const activeTasks = tasks.filter((t) => t.status === "compressing" || t.status === "uploading");
-  const errorTasks = tasks.filter((t) => t.status === "error");
+  const activeTasks = tasks.filter(
+    (t) => t.status === "compressing" || t.status === "uploading"
+  );
   const isBusy = activeTasks.length > 0 || disabled;
 
+  // Overall progress for the progress bar
   const overallProgress =
     tasks.length > 0
       ? Math.round(
-          tasks.reduce((sum, t) => sum + (t.status === "done" ? 100 : t.progress), 0) /
-            tasks.length
+          tasks.reduce(
+            (sum, t) => sum + (t.status === "done" ? 100 : t.progress),
+            0
+          ) / Math.min(tasks.length, MAX_VISIBLE_TASKS)
         )
       : 0;
 
@@ -200,9 +256,8 @@ export function ImageUploader({ onUpload, disabled }: ImageUploaderProps) {
             <span className="text-xs">
               {tasks.some((t) => t.status === "compressing")
                 ? `压缩中 ${overallProgress}%`
-                : `上传中 (${tasks.filter((t) => t.status === "done").length}/${tasks.length})`}
+                : `上传中 (${tasks.filter((t) => t.status === "done").length}/${Math.min(tasks.length, MAX_VISIBLE_TASKS)})`}
             </span>
-            {/* Progress bar */}
             <div className="w-3/4 h-1 bg-gray-200 rounded-full overflow-hidden mt-1">
               <div
                 className="h-full bg-orange-400 rounded-full transition-all duration-300"
@@ -218,7 +273,6 @@ export function ImageUploader({ onUpload, disabled }: ImageUploaderProps) {
         )}
       </Button>
 
-      {/* Task list */}
       {tasks.length > 0 && (
         <div className="space-y-1 max-h-32 overflow-y-auto">
           {tasks.map((task) => (

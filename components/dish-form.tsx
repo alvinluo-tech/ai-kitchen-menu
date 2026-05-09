@@ -90,6 +90,7 @@ export function DishForm({ dish, mode }: DishFormProps) {
     register,
     handleSubmit,
     setValue,
+    getValues,
     watch,
     formState: { errors },
   } = useForm<DishFormData>({
@@ -286,7 +287,7 @@ export function DishForm({ dish, mode }: DishFormProps) {
                 ))}
               </div>
             )}
-            <ImageUploader onUpload={(url) => setValue("image_urls", [...imageUrls, url])} disabled={loading} />
+            <ImageUploader onUpload={(url) => setValue("image_urls", [...(getValues("image_urls") || []), url])} disabled={loading} />
           </div>
           <DishBasicInfo
             register={register}

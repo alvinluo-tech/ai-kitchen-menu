@@ -15,7 +15,7 @@ export type FormAttachment = {
 
 type AttachmentFormProps = {
   attachment: FormAttachment;
-  onChange: (attachment: FormAttachment) => void;
+  onChange: (attachment: FormAttachment | ((prev: FormAttachment) => FormAttachment)) => void;
   disabled?: boolean;
 };
 
@@ -25,7 +25,10 @@ export function AttachmentForm({ attachment, onChange, disabled }: AttachmentFor
   };
 
   const handleAddImage = (url: string) => {
-    handleUpdate("image_urls", [...attachment.image_urls, url]);
+    onChange((prev) => ({
+      ...prev,
+      image_urls: [...prev.image_urls, url],
+    }));
   };
 
   const handleRemoveImage = (index: number) => {
