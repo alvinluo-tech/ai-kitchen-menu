@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2 } from "lucide-react";
+import { Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ImageUploader } from "@/components/image-uploader";
@@ -18,7 +18,9 @@ import { DishAttributes } from "@/components/dish-form/dish-attributes";
 import { DishIngredients } from "@/components/dish-form/dish-ingredients";
 import { DishTags } from "@/components/dish-form/dish-tags";
 import type { Dish } from "@/lib/dishes/types";
+import { getDishImageUrls } from "@/lib/dishes/types";
 import type { DishDraft } from "@/lib/ai/dish-draft-schema";
+import { arrayMove } from "@dnd-kit/sortable";
 import slugify from "slugify";
 
 export const dishSchema = z.object({
@@ -26,7 +28,7 @@ export const dishSchema = z.object({
   slug: z.string().optional(),
   description: z.string().min(1, "请输入描述"),
   story: z.string().optional(),
-  image_url: z.string().optional().or(z.literal("")),
+  image_urls: z.array(z.string()),
   cuisine: z.string().optional(),
   spice_level: z.number().min(0).max(5),
   difficulty: z.enum(["easy", "medium", "hard"]),
@@ -97,7 +99,7 @@ export function DishForm({ dish, mode }: DishFormProps) {
       slug: dish?.slug ?? "",
       description: dish?.description ?? "",
       story: dish?.story ?? "",
-      image_url: dish?.image_url ?? "",
+      image_urls: getDishImageUrls(dish?.image_url),
       cuisine: dish?.cuisine ?? "",
       spice_level: dish?.spice_level ?? 0,
       difficulty: dish?.difficulty ?? "easy",
@@ -116,7 +118,7 @@ export function DishForm({ dish, mode }: DishFormProps) {
 
   const ingredients = watch("ingredients");
   const tags = watch("tags");
-  const imageUrl = watch("image_url");
+  const imageUrls = watch("image_urls");
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setValue("name", e.target.value);
@@ -162,6 +164,11 @@ export function DishForm({ dish, mode }: DishFormProps) {
     const current = watch("ingredients");
     setValue("ingredients", current.filter((_, i) => i !== index));
     if (editingIngredientIndex === index) cancelEditIngredient();
+  };
+
+  const moveIngredient = (fromIndex: number, toIndex: number) => {
+    const current = watch("ingredients");
+    setValue("ingredients", arrayMove(current, fromIndex, toIndex));
   };
 
   const addTag = () => {
@@ -229,7 +236,7 @@ export function DishForm({ dish, mode }: DishFormProps) {
             sessionStorage.setItem("ai-kitchen-menu:optimistic-dish", JSON.stringify({
               id: "pending", name: data.name,
               slug: slugify(data.name, { lower: true, strict: true }),
-              description: data.description, image_url: data.image_url || null,
+              description: data.description, image_url: data.image_urls?.[0] || null,
               is_available: data.is_available, createdAt: Date.now(),
             }));
           } catch {}
@@ -261,16 +268,25 @@ export function DishForm({ dish, mode }: DishFormProps) {
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <div className="text-sm font-medium">菜品图片</div>
-            {imageUrl ? (
-              <div className="relative">
-                <img src={imageUrl} alt="菜品图片" className="w-full h-48 object-cover rounded-lg" />
-                <Button type="button" variant="destructive" size="icon" className="absolute top-2 right-2" onClick={() => setValue("image_url", "")}>
-                  <span className="sr-only">删除</span>×
-                </Button>
+            {imageUrls.length > 0 && (
+              <div className="grid grid-cols-2 gap-2">
+                {imageUrls.map((url, index) => (
+                  <div key={index} className="relative">
+                    <img src={url} alt={`菜品图片 ${index + 1}`} className="w-full aspect-square object-cover rounded-lg" />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-1 right-1 h-6 w-6"
+                      onClick={() => setValue("image_urls", imageUrls.filter((_, i) => i !== index))}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
               </div>
-            ) : (
-              <ImageUploader onUpload={(url) => setValue("image_url", url)} disabled={loading} />
             )}
+            <ImageUploader onUpload={(url) => setValue("image_urls", [...imageUrls, url])} disabled={loading} />
           </div>
           <DishBasicInfo
             register={register}
@@ -308,6 +324,7 @@ export function DishForm({ dish, mode }: DishFormProps) {
             onEdit={editIngredient}
             onCancelEdit={cancelEditIngredient}
             onRemove={removeIngredient}
+            onReorder={moveIngredient}
           />
         </CardContent>
       </Card>

@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { getDishImageUrl } from "@/lib/dishes/types";
 
 type ChefProfile = {
   id: string;
@@ -112,9 +113,9 @@ export function ChefDetailDialog({ chef, open, onOpenChange }: ChefDetailDialogP
                     className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                   >
                     <div className="w-10 h-10 bg-gradient-to-br from-orange-100 to-amber-50 rounded flex-shrink-0 overflow-hidden">
-                      {dish.image_url ? (
+                      {getDishImageUrl(dish.image_url) ? (
                         <Image
-                          src={dish.image_url}
+                          src={getDishImageUrl(dish.image_url)!}
                           alt={dish.name}
                           width={40}
                           height={40}

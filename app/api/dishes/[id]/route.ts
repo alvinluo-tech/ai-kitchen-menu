@@ -7,12 +7,12 @@ const DishSchema = z.object({
   slug: z.string().min(1),
   description: z.string().min(1),
   story: z.string().optional(),
-  image_url: z.string().url().optional().or(z.literal("")),
+  image_urls: z.array(z.string()),
   cuisine: z.string().optional(),
   spice_level: z.number().min(0).max(5),
   difficulty: z.enum(["easy", "medium", "hard"]),
   cooking_time_minutes: z.number().positive().optional().nullable(),
-  servings: z.number().positive().optional().nullable(),
+  servings: z.string().optional().nullable(),
   is_available: z.boolean(),
   ingredients: z.array(
     z.object({
@@ -78,13 +78,13 @@ export async function PUT(request: Request, { params }: Props) {
       );
     }
 
-    const { ingredients, tags, attachment, ...dishData } = parsed.data;
+    const { ingredients, tags, attachment, image_urls, ...dishData } = parsed.data;
 
     const { error: dishError } = await supabase
       .from("dishes")
       .update({
         ...dishData,
-        image_url: dishData.image_url || null,
+        image_url: image_urls.length > 0 ? JSON.stringify(image_urls) : null,
       })
       .eq("id", id);
 

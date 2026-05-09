@@ -1,5 +1,6 @@
 import { DishCard } from "./dish-card";
 import type { Dish } from "@/lib/dishes/types";
+import { getDishImageUrl } from "@/lib/dishes/types";
 
 type DishGridProps = {
   dishes: Dish[];
@@ -13,7 +14,7 @@ export function DishGrid({ dishes }: DishGridProps) {
           key={dish.id}
           name={dish.name}
           slug={dish.slug}
-          imageUrl={dish.image_url}
+          imageUrl={getDishImageUrl(dish.image_url)}
           description={dish.description}
           tags={dish.dish_tags?.map((tag) => tag.tag) ?? []}
           cookingTimeMinutes={dish.cooking_time_minutes}

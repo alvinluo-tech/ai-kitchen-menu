@@ -9,6 +9,8 @@ import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { PublicAttachments } from "@/components/public-attachments";
 import { getDishBySlug } from "@/lib/dishes/queries";
+import { getDishImageUrls } from "@/lib/dishes/types";
+import { DishImageGallery } from "@/components/dish-image-gallery";
 import { BackButton } from "@/components/back-button";
 import { AudioPlayer } from "@/components/audio-player";
 
@@ -48,6 +50,8 @@ export default async function DishDetailPage({ params }: Props) {
 
   const chef = dish.profiles;
 
+  const imageUrls = getDishImageUrls(dish.image_url);
+
   // 检查厨师是否有声音样本
   let chefHasVoice = false;
   if (chef) {
@@ -84,22 +88,7 @@ export default async function DishDetailPage({ params }: Props) {
           <BackButton />
 
           <div className="bg-white rounded-2xl shadow-md overflow-hidden">
-            {dish.image_url ? (
-              <div className="aspect-[16/9] relative">
-                <Image
-                  src={dish.image_url}
-                  alt={dish.name}
-                  fill
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 1200px"
-                  className="object-cover"
-                  priority
-                />
-              </div>
-            ) : (
-              <div className="aspect-[16/9] bg-gradient-to-br from-orange-100 to-amber-50 flex items-center justify-center">
-                <ChefHat className="h-16 w-16 md:h-24 md:w-24 text-orange-200" />
-              </div>
-            )}
+            <DishImageGallery images={imageUrls} dishName={dish.name} />
 
             <div className="p-4 md:p-8">
               {chef && (

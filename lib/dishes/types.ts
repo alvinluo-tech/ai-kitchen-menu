@@ -1,3 +1,17 @@
+export function getDishImageUrls(imageUrl: string | null | undefined): string[] {
+  if (!imageUrl) return [];
+  try {
+    const parsed = JSON.parse(imageUrl);
+    return Array.isArray(parsed) ? parsed : [imageUrl];
+  } catch {
+    return [imageUrl];
+  }
+}
+
+export function getDishImageUrl(imageUrl: string | null | undefined): string | null {
+  return getDishImageUrls(imageUrl)[0] || null;
+}
+
 export type Difficulty = "easy" | "medium" | "hard";
 
 export type Ingredient = {

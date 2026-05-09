@@ -22,7 +22,11 @@ export async function updateSession(request: NextRequest) {
             request,
           });
           cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
+            supabaseResponse.cookies.set(name, value, {
+              ...options,
+              // 确保 cookie 有 maxAge，避免浏览器累积不清理
+              maxAge: options.maxAge ?? 60 * 60 * 24 * 7,
+            })
           );
         },
       },

@@ -7,6 +7,7 @@ import { Loader2, Pencil, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DeleteDishButton } from "./delete-dish-button";
+import { getDishImageUrl } from "@/lib/dishes/types";
 
 type Dish = {
   id: string;
@@ -85,9 +86,9 @@ export function DishList({ dishes }: DishListProps) {
           className="flex items-center gap-3 md:gap-4 p-3 md:p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer"
         >
           <div className="w-14 h-14 md:w-16 md:h-16 bg-gradient-to-br from-orange-100 to-amber-50 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
-            {dish.image_url ? (
+            {getDishImageUrl(dish.image_url) ? (
               <Image
-                src={dish.image_url}
+                src={getDishImageUrl(dish.image_url)!}
                 alt={dish.name}
                 width={64}
                 height={64}

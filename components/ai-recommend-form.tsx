@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { DishCard } from "@/components/dish-card";
 import { EmptyState } from "@/components/empty-state";
 import { AiLoadingState } from "@/components/ai-loading-state";
+import { getDishImageUrl } from "@/lib/dishes/types";
 
 type Recommendation = {
   dish: {
@@ -201,7 +202,7 @@ export function AiRecommendForm() {
                   key={rec.dish.id}
                   name={rec.dish.name}
                   slug={rec.dish.slug}
-                  imageUrl={rec.dish.image_url}
+                  imageUrl={getDishImageUrl(rec.dish.image_url)}
                   description={rec.dish.description}
                   tags={rec.dish.dish_tags?.map((tag) => tag.tag) ?? []}
                   cookingTimeMinutes={rec.dish.cooking_time_minutes}
