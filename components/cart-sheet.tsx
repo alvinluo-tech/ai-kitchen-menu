@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { ShoppingCart, Plus, Minus, Trash2, ChefHat } from "lucide-react";
+import { ShoppingCart, Plus, Minus, Trash2, ChefHat, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useCart } from "@/lib/cart-context";
@@ -42,6 +42,12 @@ export function CartSheet() {
             <p className="text-sm">还没有点菜，去逛逛菜单吧</p>
             <Link href="/menu" onClick={() => setOpen(false)}>
               <Button variant="outline" size="sm">浏览菜单</Button>
+            </Link>
+            <Link href="/order/history" onClick={() => setOpen(false)}>
+              <Button variant="ghost" size="sm" className="gap-1 text-gray-400">
+                <Clock className="h-4 w-4" />
+                点单记录
+              </Button>
             </Link>
           </div>
         ) : (
@@ -119,6 +125,12 @@ export function CartSheet() {
                 <Button className="w-full gap-2" size="lg">
                   <ShoppingCart className="h-4 w-4" />
                   去下单
+                </Button>
+              </Link>
+              <Link href="/order/history" onClick={() => setOpen(false)} className="block mt-2">
+                <Button variant="ghost" size="sm" className="w-full gap-1 text-gray-500">
+                  <Clock className="h-4 w-4" />
+                  点单记录
                 </Button>
               </Link>
             </div>

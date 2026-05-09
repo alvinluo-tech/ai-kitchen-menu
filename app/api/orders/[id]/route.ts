@@ -79,6 +79,12 @@ export async function PUT(
     }
 
     if (action === "complete") {
+      // Get order items to increment dish counts
+      const { data: orderItems } = await supabase
+        .from("order_items")
+        .select("dish_id, quantity")
+        .eq("order_id", id);
+
       const { error } = await supabase
         .from("orders")
         .update({ status: "completed" })
@@ -88,6 +94,16 @@ export async function PUT(
       if (error) {
         console.error("Failed to complete order:", error);
         return NextResponse.json({ error: "完成订单失败" }, { status: 500 });
+      }
+
+      // Increment order_count only when order is completed
+      if (orderItems) {
+        for (const item of orderItems) {
+          await supabase.rpc("increment_order_count", {
+            dish_id: item.dish_id,
+            increment_by: item.quantity,
+          });
+        }
       }
 
       return NextResponse.json({ success: true });

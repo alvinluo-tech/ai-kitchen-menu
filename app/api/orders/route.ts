@@ -58,14 +58,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "创建订单菜品失败" }, { status: 500 });
     }
 
-    // Increment order_count for each dish
-    for (const item of items) {
-      await supabase.rpc("increment_order_count", {
-        dish_id: item.dish_id,
-        increment_by: item.quantity,
-      });
-    }
-
     return NextResponse.json({ orderId: order.id }, { status: 201 });
   } catch (error) {
     console.error("Failed to create order:", error);

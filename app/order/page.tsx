@@ -6,10 +6,11 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
   ShoppingCart, ChevronLeft, ChefHat, Plus, Minus, Trash2,
-  Loader2, CheckCircle,
+  Loader2, CheckCircle, Clock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/lib/cart-context";
+import { saveOrder } from "@/lib/order-history";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 
@@ -44,6 +45,22 @@ export default function OrderPage() {
         throw new Error(data.error || "下单失败");
       }
 
+      const data = await res.json();
+
+      // Save to local history
+      saveOrder({
+        orderId: data.orderId,
+        createdAt: new Date().toISOString(),
+        note: note || "",
+        items: items.map((item) => ({
+          dishId: item.dishId,
+          name: item.name,
+          slug: item.slug,
+          quantity: item.quantity,
+          imageUrl: item.imageUrl || "",
+        })),
+      });
+
       clearCart();
       setSubmitted(true);
     } catch (err) {
@@ -68,6 +85,9 @@ export default function OrderPage() {
                 你的点单已提交，厨师会尽快确认
               </p>
               <div className="flex flex-col gap-2">
+                <Link href="/order/history">
+                  <Button className="w-full">查看点单记录</Button>
+                </Link>
                 <Link href="/menu">
                   <Button variant="outline" className="w-full">继续浏览菜单</Button>
                 </Link>
@@ -96,6 +116,12 @@ export default function OrderPage() {
               <ShoppingCart className="h-5 w-5" />
               确认点单
             </h1>
+            <Link href="/order/history" className="ml-auto">
+              <Button variant="ghost" size="sm" className="gap-1 text-gray-500">
+                <Clock className="h-4 w-4" />
+                记录
+              </Button>
+            </Link>
           </div>
 
           {items.length === 0 ? (

@@ -10,17 +10,20 @@ type ImageUploaderProps = {
   disabled?: boolean;
 };
 
+const ACCEPT = "image/jpeg,image/png,image/webp,image/heic,image/heif";
+
 const COMPRESSION_OPTIONS = {
   maxSizeMB: 0.8,
-  maxWidthOrHeight: 1600,
+  maxWidthOrHeight: 1200,
   useWebWorker: true,
-  initialQuality: 0.8,
+  initialQuality: 0.7,
   fileType: "image/webp" as const,
 };
 
 export function ImageUploader({ onUpload, disabled }: ImageUploaderProps) {
   const [uploading, setUploading] = useState(false);
   const [compressing, setCompressing] = useState(false);
+  const [status, setStatus] = useState("");
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -30,21 +33,21 @@ export function ImageUploader({ onUpload, disabled }: ImageUploaderProps) {
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      setError("图片大小不能超过 5MB");
-      return;
-    }
-
+    // No client-side size limit — compression will handle large files
     setError(null);
 
     try {
       setCompressing(true);
-      const compressedFile = await imageCompression(file, COMPRESSION_OPTIONS);
-      setCompressing(false);
+      setStatus("压缩中...");
 
+      const compressedFile = await imageCompression(file, COMPRESSION_OPTIONS);
+
+      setCompressing(false);
       setUploading(true);
+      setStatus("上传中...");
+
       const formData = new FormData();
-      formData.append("file", compressedFile);
+      formData.append("file", compressedFile, "image.webp");
 
       const response = await fetch("/api/upload", {
         method: "POST",
@@ -59,7 +62,6 @@ export function ImageUploader({ onUpload, disabled }: ImageUploaderProps) {
 
       onUpload(data.url);
 
-      // 重置 input
       if (inputRef.current) {
         inputRef.current.value = "";
       }
@@ -68,6 +70,7 @@ export function ImageUploader({ onUpload, disabled }: ImageUploaderProps) {
     } finally {
       setUploading(false);
       setCompressing(false);
+      setStatus("");
     }
   };
 
@@ -78,15 +81,17 @@ export function ImageUploader({ onUpload, disabled }: ImageUploaderProps) {
     }
   };
 
+  const isBusy = disabled || uploading || compressing;
+
   return (
     <div className="space-y-2">
       <input
         ref={inputRef}
         type="file"
-        accept="image/jpeg,image/png,image/webp"
+        accept={ACCEPT}
         onChange={handleFileChange}
         className="hidden"
-        disabled={disabled || uploading || compressing}
+        disabled={isBusy}
       />
 
       <Button
@@ -94,18 +99,14 @@ export function ImageUploader({ onUpload, disabled }: ImageUploaderProps) {
         variant="outline"
         className="w-full h-24 border-dashed"
         onClick={() => inputRef.current?.click()}
-        disabled={disabled || uploading || compressing}
+        disabled={isBusy}
       >
         {compressing || uploading ? (
           <Loader2 className="h-5 w-5 animate-spin mr-2" />
         ) : (
           <Upload className="h-5 w-5 mr-2" />
         )}
-        {compressing
-          ? "压缩中..."
-          : uploading
-          ? "上传中..."
-          : "点击上传图片"}
+        {status || "点击上传图片"}
       </Button>
 
       {error && (
