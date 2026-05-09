@@ -82,22 +82,28 @@ export function SiteHeader() {
             <div className="w-20 h-9" />
           ) : isChef ? (
             <div className="flex items-center gap-2">
-              <Button render={<Link href="/admin/profile" />} variant="outline" size="sm" className="gap-1">
-                <ChefHat className="h-4 w-4" />
-                个人资料
-              </Button>
-              <Button render={<Link href="/admin" />} variant={pathname.startsWith("/admin") ? "default" : "outline"} size="sm" className="gap-1">
-                <LayoutDashboard className="h-4 w-4" />
-                后台管理
-              </Button>
+              <Link href="/admin/profile">
+                <Button variant="ghost" size="sm" className="gap-1">
+                  <ChefHat className="h-4 w-4" />
+                  个人资料
+                </Button>
+              </Link>
+              <Link href="/admin">
+                <Button variant={pathname.startsWith("/admin") ? "default" : "outline"} size="sm" className="gap-1">
+                  <LayoutDashboard className="h-4 w-4" />
+                  后台管理
+                </Button>
+              </Link>
               <Button variant="ghost" size="sm" onClick={handleLogout}>
                 <LogOut className="h-4 w-4" />
               </Button>
             </div>
           ) : (
-            <Button render={<Link href="/login" />} variant="ghost" size="sm" className="text-gray-500">
-              厨师入口
-            </Button>
+            <Link href="/login">
+              <Button variant="ghost" size="sm" className="text-gray-500">
+                厨师入口
+              </Button>
+            </Link>
           )}
         </nav>
 
@@ -138,14 +144,18 @@ export function SiteHeader() {
                   {!loading && (
                     isChef ? (
                       <div className="flex flex-col gap-2">
-                        <Button render={<Link href="/admin/profile" onClick={() => setOpen(false)} />} variant="outline" className="w-full justify-start gap-2">
-                          <ChefHat className="h-4 w-4" />
-                          个人资料
-                        </Button>
-                        <Button render={<Link href="/admin" onClick={() => setOpen(false)} />} variant={pathname.startsWith("/admin") ? "default" : "outline"} className="w-full justify-start gap-2">
-                          <LayoutDashboard className="h-4 w-4" />
-                          后台管理
-                        </Button>
+                        <Link href="/admin/profile" onClick={() => setOpen(false)}>
+                          <Button variant="outline" className="w-full justify-start gap-2">
+                            <ChefHat className="h-4 w-4" />
+                            个人资料
+                          </Button>
+                        </Link>
+                        <Link href="/admin" onClick={() => setOpen(false)}>
+                          <Button variant={pathname.startsWith("/admin") ? "default" : "outline"} className="w-full justify-start gap-2">
+                            <LayoutDashboard className="h-4 w-4" />
+                            后台管理
+                          </Button>
+                        </Link>
                         <Button
                           variant="ghost"
                           className="w-full justify-start text-gray-500"
@@ -156,9 +166,11 @@ export function SiteHeader() {
                         </Button>
                       </div>
                     ) : (
-                      <Button render={<Link href="/login" onClick={() => setOpen(false)} />} variant="ghost" className="w-full justify-start text-gray-500">
-                        厨师入口
-                      </Button>
+                      <Link href="/login" onClick={() => setOpen(false)}>
+                        <Button variant="ghost" className="w-full justify-start text-gray-500">
+                          厨师入口
+                        </Button>
+                      </Link>
                     )
                   )}
                 </div>

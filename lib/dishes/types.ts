@@ -35,7 +35,7 @@ export type Dish = {
   spice_level: number;
   difficulty: Difficulty;
   cooking_time_minutes?: number | null;
-  servings?: number | null;
+  servings?: string | null;
   is_available: boolean;
   created_by?: string | null;
   created_at: string;

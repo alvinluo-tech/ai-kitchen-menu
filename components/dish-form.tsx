@@ -31,7 +31,7 @@ export const dishSchema = z.object({
   spice_level: z.number().min(0).max(5),
   difficulty: z.enum(["easy", "medium", "hard"]),
   cooking_time_minutes: z.number().positive().optional().nullable(),
-  servings: z.number().positive().optional().nullable(),
+  servings: z.string().optional().nullable(),
   is_available: z.boolean(),
   ingredients: z.array(
     z.object({

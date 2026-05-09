@@ -8,7 +8,7 @@ export const DishDraftSchema = z.object({
   spice_level: z.number().min(0).max(5).describe("辣度，0-5"),
   difficulty: z.enum(["easy", "medium", "hard"]).describe("难度"),
   cooking_time_minutes: z.number().describe("烹饪时间（分钟）"),
-  servings: z.number().describe("适合人数"),
+  servings: z.string().describe("适合人数，如：3-4、2"),
   ingredients: z.array(
     z.object({
       name: z.string().describe("食材名称"),

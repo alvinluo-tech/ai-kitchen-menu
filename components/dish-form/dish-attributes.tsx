@@ -67,12 +67,8 @@ export function DishAttributes({ register, setValue, difficulty }: Props) {
           <Label htmlFor="servings">适合人数</Label>
           <Input
             id="servings"
-            type="number"
-            min="1"
-            {...register("servings", {
-              valueAsNumber: true,
-              setValueAs: (v: string) => (v === "" ? null : Number(v)),
-            })}
+            placeholder="例如：3-4"
+            {...register("servings")}
           />
         </div>
       </div>

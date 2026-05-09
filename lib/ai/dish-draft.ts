@@ -21,7 +21,7 @@ export async function generateDishDraft(description: string): Promise<DishDraft>
   "spice_level": 0到5的数字，0=不辣，5=极辣,
   "difficulty": "easy" 或 "medium" 或 "hard",
   "cooking_time_minutes": 预估烹饪时间（分钟）,
-  "servings": 适合人数,
+  "servings": "适合人数，如：3-4、2、4-6",
   "ingredients": [
     {
       "name": "食材名称",
