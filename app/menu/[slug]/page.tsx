@@ -67,10 +67,10 @@ export default async function DishDetailPage({ params }: Props) {
   ]);
 
   const chefHasVoice = (() => {
-    if (!chef || chefVoiceResult.status !== "rejected") return false;
+    if (!chef || chefVoiceResult.status !== "fulfilled") return false;
     // Promise.allSettled returns status "fulfilled" even for Supabase errors
     // so we check the actual data
-    if (chefVoiceResult.status === "fulfilled" && chefVoiceResult.value) {
+    if (chefVoiceResult.value) {
       const data = chefVoiceResult.value.data;
       return !!(data?.voice_clone_enabled && data?.audio_sample);
     }
