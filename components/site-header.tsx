@@ -13,6 +13,7 @@ import { PwaInstallButton } from "@/components/pwa-install-button";
 const navItems = [
   { href: "/", label: "首页" },
   { href: "/menu", label: "全部菜单" },
+  { href: "/plate", label: "装盘抽取" },
   { href: "/recommend", label: "AI 推荐" },
   { href: "/chefs", label: "厨师风采" },
 ];
