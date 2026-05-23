@@ -7,7 +7,7 @@ import { classifyDish } from "@/lib/dishes/classify";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "装盘抽取 | AI 私厨电子菜单",
+  title: "转盘抽取 | AI 私厨电子菜单",
   description: "转一转，今天吃什么？随机抽取荤素汤搭配",
 };
 

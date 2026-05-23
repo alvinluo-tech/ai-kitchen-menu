@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { UtensilsCrossed, RotateCcw, ShoppingCart, ChefHat, Flame, Clock } from "lucide-react";
@@ -40,6 +40,35 @@ const CATEGORY_ORDER: { key: "meat" | "vegetable" | "soup"; label: string; icon:
   { key: "soup", label: "汤品", icon: "🍲" },
 ];
 
+const SPIN_STORAGE_KEY = "akm-spin-result";
+const SPIN_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+type SpinSaved = { ids: string[]; ts: number };
+
+function saveSpinResult(ids: string[]) {
+  try {
+    localStorage.setItem(SPIN_STORAGE_KEY, JSON.stringify({ ids, ts: Date.now() }));
+  } catch {}
+}
+
+function loadSpinResult(): string[] | null {
+  try {
+    const raw = localStorage.getItem(SPIN_STORAGE_KEY);
+    if (!raw) return null;
+    const data: SpinSaved = JSON.parse(raw);
+    if (Date.now() - data.ts > SPIN_TTL_MS) return null;
+    return data.ids;
+  } catch {
+    return null;
+  }
+}
+
+function clearSpinResult() {
+  try {
+    localStorage.removeItem(SPIN_STORAGE_KEY);
+  } catch {}
+}
+
 function weightedRandomPick(pool: Dish[]): { index: number; dish: Dish } {
   // Weight by order_count + 1 to favor popular dishes
   const weights = pool.map((d) => (d.order_count ?? 0) + 1);
@@ -61,8 +90,29 @@ export function PlateSpin({ categorizedDishes }: { categorizedDishes: Categorize
   const [wheelItems, setWheelItems] = useState<string[]>([]);
   const [currentPool, setCurrentPool] = useState<Dish[]>([]);
   const [excludedIds, setExcludedIds] = useState<Set<string>>(new Set());
+  const restoredRef = useRef(false);
 
   const isSpinning = phase.startsWith("spinning_");
+
+  // Restore spin results from localStorage on mount
+  useEffect(() => {
+    if (restoredRef.current) return;
+    restoredRef.current = true;
+    const savedIds = loadSpinResult();
+    if (!savedIds || savedIds.length === 0) return;
+
+    const allDishes = [...categorizedDishes.meat, ...categorizedDishes.vegetable, ...categorizedDishes.soup];
+    const restored: ResultSlot[] = CATEGORY_ORDER.map((cat) => {
+      const dishId = savedIds[CATEGORY_ORDER.indexOf(cat)];
+      const dish = allDishes.find((d) => d.id === dishId) ?? null;
+      return { category: cat.key, label: cat.label, icon: cat.icon, dish };
+    });
+
+    if (restored.some((r) => r.dish)) {
+      setResults(restored);
+      setPhase("done");
+    }
+  }, [categorizedDishes]);
 
   const getCurrentCategory = useCallback((): "meat" | "vegetable" | "soup" | null => {
     if (phase === "spinning_meat") return "meat";
@@ -155,7 +205,18 @@ export function PlateSpin({ categorizedDishes }: { categorizedDishes: Categorize
     }
   }, [getCurrentCategory, currentPool, spinTarget, startSpin]);
 
+  // Save results to localStorage when done
+  useEffect(() => {
+    if (phase !== "done") return;
+    const ids = CATEGORY_ORDER.map((cat) => {
+      const slot = results.find((r) => r.category === cat.key);
+      return slot?.dish?.id ?? "";
+    });
+    if (ids.some((id) => id)) saveSpinResult(ids);
+  }, [phase, results]);
+
   const handleReset = useCallback(() => {
+    clearSpinResult();
     setPhase("idle");
     setResults(CATEGORY_ORDER.map((c) => ({ category: c.key, label: c.label, icon: c.icon, dish: null })));
     setSpinTarget(-1);
@@ -238,7 +299,7 @@ export function PlateSpin({ categorizedDishes }: { categorizedDishes: Categorize
             className="rounded-full px-8 py-6 text-lg font-bold bg-orange-500 hover:bg-orange-600 shadow-lg hover:shadow-xl transition-all"
           >
             <UtensilsCrossed className="w-5 h-5 mr-2" />
-            开始装盘
+            开始转盘
           </Button>
         )}
 
@@ -256,7 +317,7 @@ export function PlateSpin({ categorizedDishes }: { categorizedDishes: Categorize
 
         {(phase.startsWith("reveal_") || phase === "done") && !isSpinning && phase !== "idle" && (
           <div className="text-sm text-green-600 font-medium">
-            {phase === "done" ? "装盘完成！" : "抽到了！"}
+            {phase === "done" ? "转盘完成！" : "抽到了！"}
           </div>
         )}
       </div>
@@ -364,7 +425,7 @@ export function PlateSpin({ categorizedDishes }: { categorizedDishes: Categorize
               className="rounded-full px-6"
             >
               <RotateCcw className="w-4 h-4 mr-2" />
-              重新装盘
+              重新转盘
             </Button>
             <Button
               render={<Link href="/order" />}

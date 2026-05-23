@@ -106,7 +106,7 @@ function drawWheel(
   ctx.font = "bold 14px system-ui, sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText("装盘", CENTER, CENTER);
+  ctx.fillText("转盘", CENTER, CENTER);
 }
 
 function drawPointer(ctx: CanvasRenderingContext2D) {
