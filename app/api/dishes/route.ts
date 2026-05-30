@@ -27,6 +27,7 @@ const DishSchema = z.object({
   cooking_time_minutes: z.number().positive().optional().nullable(),
   servings: z.string().optional().nullable(),
   is_available: z.boolean(),
+  status: z.enum(["draft", "published"]).default("published"),
   ingredients: z.array(
     z.object({
       name: z.string(),

@@ -35,6 +35,7 @@ export const dishSchema = z.object({
   cooking_time_minutes: z.number().positive().optional().nullable(),
   servings: z.string().optional().nullable(),
   is_available: z.boolean(),
+  status: z.enum(["draft", "published"]),
   ingredients: z.array(
     z.object({
       name: z.string(),
@@ -107,6 +108,7 @@ export function DishForm({ dish, mode }: DishFormProps) {
       cooking_time_minutes: dish?.cooking_time_minutes ?? null,
       servings: dish?.servings ?? null,
       is_available: dish?.is_available ?? true,
+      status: dish?.status ?? "published",
       ingredients:
         dish?.dish_ingredients?.map((item) => ({
           name: item.ingredients.name,
@@ -238,12 +240,17 @@ export function DishForm({ dish, mode }: DishFormProps) {
               id: "pending", name: data.name,
               slug: slugify(data.name, { lower: true, strict: true }),
               description: data.description, image_url: data.image_urls?.[0] || null,
-              is_available: data.is_available, createdAt: Date.now(),
+              is_available: data.is_available, status: data.status, createdAt: Date.now(),
             }));
           } catch {}
         }
         const { toast } = await import("sonner");
-        toast.success(mode === "create" ? "菜品创建成功" : "菜品更新成功");
+        const isDraft = data.status === "draft";
+        toast.success(
+          mode === "create"
+            ? (isDraft ? "已存为草稿" : "菜品创建成功")
+            : (isDraft ? "已撤回为草稿" : "菜品更新成功")
+        );
         router.push("/admin");
         router.refresh();
       }
@@ -357,12 +364,58 @@ export function DishForm({ dish, mode }: DishFormProps) {
         </CardContent>
       </Card>
 
-      <div className="flex gap-4">
-        <Button type="submit" disabled={loading}>
-          {loading ? (
-            <><Loader2 className="h-4 w-4 animate-spin mr-2" />保存中...</>
-          ) : mode === "create" ? "创建菜品" : "保存修改"}
-        </Button>
+      <div className="flex gap-4 flex-wrap">
+        {mode === "create" ? (
+          <>
+            <Button
+              type="button"
+              disabled={loading}
+              onClick={handleSubmit((data) => onSubmit({ ...data, status: "published" }))}
+            >
+              {loading ? (
+                <><Loader2 className="h-4 w-4 animate-spin mr-2" />保存中...</>
+              ) : "直接发布"}
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={loading}
+              onClick={handleSubmit((data) => onSubmit({ ...data, status: "draft" }))}
+            >
+              {loading ? (
+                <><Loader2 className="h-4 w-4 animate-spin mr-2" />保存中...</>
+              ) : "存为草稿"}
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button type="submit" disabled={loading}>
+              {loading ? (
+                <><Loader2 className="h-4 w-4 animate-spin mr-2" />保存中...</>
+              ) : "保存修改"}
+            </Button>
+            {dish?.status === "draft" && (
+              <Button
+                type="button"
+                variant="default"
+                disabled={loading}
+                onClick={handleSubmit((data) => onSubmit({ ...data, status: "published" }))}
+              >
+                发布菜品
+              </Button>
+            )}
+            {dish?.status === "published" && (
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={loading}
+                onClick={handleSubmit((data) => onSubmit({ ...data, status: "draft" }))}
+              >
+                撤回为草稿
+              </Button>
+            )}
+          </>
+        )}
         <Button type="button" variant="outline" onClick={() => router.back()} disabled={loading}>
           取消
         </Button>

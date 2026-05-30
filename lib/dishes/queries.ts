@@ -30,6 +30,7 @@ export async function getAvailableDishes() {
     .from("dishes")
     .select(DISH_SELECT)
     .eq("is_available", true)
+    .eq("status", "published")
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -93,7 +94,6 @@ export async function getChefDishes(chefId: string) {
     .from("dishes")
     .select(DISH_SELECT)
     .eq("created_by", chefId)
-    .eq("is_available", true)
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -101,4 +101,51 @@ export async function getChefDishes(chefId: string) {
   }
 
   return data ?? [];
+}
+
+export async function getChefDrafts(chefId: string) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("dishes")
+    .select(DISH_SELECT)
+    .eq("created_by", chefId)
+    .eq("status", "draft")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data ?? [];
+}
+
+export async function publishDish(dishId: string, chefId: string) {
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("dishes")
+    .update({ status: "published" })
+    .eq("id", dishId)
+    .eq("created_by", chefId)
+    .eq("status", "draft");
+
+  if (error) {
+    throw new Error(error.message);
+  }
+}
+
+export async function unpublishDish(dishId: string, chefId: string) {
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("dishes")
+    .update({ status: "draft" })
+    .eq("id", dishId)
+    .eq("created_by", chefId)
+    .eq("status", "published");
+
+  if (error) {
+    throw new Error(error.message);
+  }
 }

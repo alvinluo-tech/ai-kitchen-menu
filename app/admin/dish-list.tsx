@@ -3,7 +3,7 @@
 import { useOptimistic, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Loader2, Pencil, Eye } from "lucide-react";
+import { Loader2, Pencil, Eye, Send, ArrowDownToLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DeleteDishButton } from "./delete-dish-button";
@@ -16,6 +16,7 @@ type Dish = {
   description: string | null;
   image_url: string | null;
   is_available: boolean;
+  status: "draft" | "published";
 };
 
 type DishListProps = {
@@ -51,6 +52,8 @@ export function DishList({ dishes }: DishListProps) {
     ? [pendingDish, ...optimisticDishes.filter((d) => d.id !== pendingDish.id)]
     : optimisticDishes;
 
+  const draftCount = displayDishes.filter((d) => d.status === "draft" && d.id !== "pending").length;
+
   const handleDelete = async (dishId: string) => {
     removeOptimisticDish(dishId);
 
@@ -67,6 +70,27 @@ export function DishList({ dishes }: DishListProps) {
       toast.error("删除失败，请重试");
     } finally {
       router.refresh();
+    }
+  };
+
+  const handleToggleStatus = async (dishId: string, action: "publish" | "unpublish") => {
+    try {
+      const response = await fetch(`/api/dishes/${dishId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      });
+
+      if (!response.ok) {
+        throw new Error("操作失败");
+      }
+
+      const { toast } = await import("sonner");
+      toast.success(action === "publish" ? "菜品已发布" : "已撤回为草稿");
+      router.refresh();
+    } catch {
+      const { toast } = await import("sonner");
+      toast.error("操作失败，请重试");
     }
   };
 
@@ -108,12 +132,20 @@ export function DishList({ dishes }: DishListProps) {
                   创建中
                 </Badge>
               ) : (
-                <Badge
-                  variant={dish.is_available ? "default" : "secondary"}
-                  className="text-xs"
-                >
-                  {dish.is_available ? "可点" : "下架"}
-                </Badge>
+                <>
+                  {dish.status === "draft" ? (
+                    <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-700 hover:bg-amber-100">
+                      草稿
+                    </Badge>
+                  ) : (
+                    <Badge
+                      variant={dish.is_available ? "default" : "secondary"}
+                      className="text-xs"
+                    >
+                      {dish.is_available ? "可点" : "下架"}
+                    </Badge>
+                  )}
+                </>
               )}
             </div>
             <p className="text-xs md:text-sm text-gray-500 truncate">
@@ -126,6 +158,27 @@ export function DishList({ dishes }: DishListProps) {
               className="flex items-center gap-2 flex-shrink-0"
               onClick={(e) => e.stopPropagation()}
             >
+              {dish.status === "draft" ? (
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="h-9 gap-1"
+                  onClick={() => handleToggleStatus(dish.id, "publish")}
+                >
+                  <Send className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">发布</span>
+                </Button>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-9 gap-1"
+                  onClick={() => handleToggleStatus(dish.id, "unpublish")}
+                >
+                  <ArrowDownToLine className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">撤回</span>
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 size="icon"

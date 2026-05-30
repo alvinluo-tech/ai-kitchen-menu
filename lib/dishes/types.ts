@@ -14,6 +14,8 @@ export function getDishImageUrl(imageUrl: string | null | undefined): string | n
 
 export type Difficulty = "easy" | "medium" | "hard";
 
+export type DishStatus = "draft" | "published";
+
 export type Ingredient = {
   id: string;
   name: string;
@@ -51,6 +53,7 @@ export type Dish = {
   cooking_time_minutes?: number | null;
   servings?: string | null;
   is_available: boolean;
+  status: DishStatus;
   order_count: number;
   created_by?: string | null;
   created_at: string;

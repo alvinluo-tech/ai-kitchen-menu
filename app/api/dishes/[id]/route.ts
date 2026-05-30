@@ -14,6 +14,7 @@ const DishSchema = z.object({
   cooking_time_minutes: z.number().positive().optional().nullable(),
   servings: z.string().optional().nullable(),
   is_available: z.boolean(),
+  status: z.enum(["draft", "published"]).default("published"),
   ingredients: z.array(
     z.object({
       name: z.string(),
@@ -196,6 +197,71 @@ export async function DELETE(request: Request, { params }: Props) {
     console.error("Failed to delete dish:", error);
     return NextResponse.json(
       { error: "删除菜品失败" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(request: Request, { params }: Props) {
+  try {
+    const { id } = await params;
+    const supabase = await createClient();
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "未登录" }, { status: 401 });
+    }
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    if (profile?.role !== "chef") {
+      return NextResponse.json({ error: "无权限" }, { status: 403 });
+    }
+
+    const { data: existingDish } = await supabase
+      .from("dishes")
+      .select("created_by, status")
+      .eq("id", id)
+      .single();
+
+    if (!existingDish || existingDish.created_by !== user.id) {
+      return NextResponse.json({ error: "无权操作此菜品" }, { status: 403 });
+    }
+
+    const body = await request.json();
+    const action = z.enum(["publish", "unpublish"]).safeParse(body.action);
+
+    if (!action.success) {
+      return NextResponse.json({ error: "无效操作" }, { status: 400 });
+    }
+
+    const newStatus = action.data === "publish" ? "published" : "draft";
+
+    if (existingDish.status === newStatus) {
+      return NextResponse.json({ success: true, status: newStatus });
+    }
+
+    const { error } = await supabase
+      .from("dishes")
+      .update({ status: newStatus })
+      .eq("id", id);
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true, status: newStatus });
+  } catch (error) {
+    console.error("Failed to update dish status:", error);
+    return NextResponse.json(
+      { error: "操作失败" },
       { status: 500 }
     );
   }
