@@ -169,7 +169,7 @@ export const DishCard = memo(function DishCard({
       </CardContent>
 
       <CardFooter className="p-3 md:p-4 pt-0">
-        <Button render={<Link href={`/menu/${slug}`} />} variant="outline" className="w-full text-xs md:text-sm h-9 md:h-10">
+        <Button render={<Link href={`/menu/${slug}`} />} nativeButton={false} variant="outline" className="w-full text-xs md:text-sm h-9 md:h-10">
           查看详情
         </Button>
       </CardFooter>

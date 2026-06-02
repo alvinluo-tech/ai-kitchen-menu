@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2, Trash2 } from "lucide-react";
+import { Loader2, Trash2, GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ImageUploader } from "@/components/image-uploader";
@@ -20,7 +20,22 @@ import { DishTags } from "@/components/dish-form/dish-tags";
 import type { Dish } from "@/lib/dishes/types";
 import { getDishImageUrls } from "@/lib/dishes/types";
 import type { DishDraft } from "@/lib/ai/dish-draft-schema";
-import { arrayMove } from "@dnd-kit/sortable";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  useSortable,
+  rectSortingStrategy,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import slugify from "slugify";
 
 export const dishSchema = z.object({
@@ -53,6 +68,60 @@ type DishFormProps = {
   mode: "create" | "edit";
 };
 
+type SortableImageProps = {
+  url: string;
+  index: number;
+  onRemove: (index: number) => void;
+  disabled?: boolean;
+};
+
+function SortableImage({ url, index, onRemove, disabled }: SortableImageProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: `image-${index}` });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 10 : undefined,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="relative group touch-manipulation"
+      {...attributes}
+      {...listeners}
+    >
+      <img
+        src={url}
+        alt={`菜品图片 ${index + 1}`}
+        className="w-full aspect-square object-cover rounded-lg"
+      />
+      <div className="absolute top-1 left-1 p-1 bg-black/50 rounded text-white/80 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+        <GripVertical className="h-3 w-3" />
+      </div>
+      <Button
+        type="button"
+        variant="destructive"
+        size="icon"
+        className="absolute top-1 right-1 h-6 w-6"
+        onClick={() => onRemove(index)}
+        disabled={disabled}
+      >
+        <Trash2 className="h-3 w-3" />
+      </Button>
+    </div>
+  );
+}
+
 export function DishForm({ dish, mode }: DishFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -67,6 +136,30 @@ export function DishForm({ dish, mode }: DishFormProps) {
     image_urls: [],
     is_public: false,
   });
+
+  const imageSensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 200,
+        tolerance: 5,
+      },
+    })
+  );
+
+  const handleImageDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      const oldIndex = Number(String(active.id).replace("image-", ""));
+      const newIndex = Number(String(over.id).replace("image-", ""));
+      const current = getValues("image_urls");
+      setValue("image_urls", arrayMove(current, oldIndex, newIndex));
+    }
+  };
 
   useEffect(() => {
     if (mode === "edit" && dish?.id) {
@@ -277,22 +370,28 @@ export function DishForm({ dish, mode }: DishFormProps) {
           <div className="space-y-2">
             <div className="text-sm font-medium">菜品图片</div>
             {imageUrls.length > 0 && (
-              <div className="grid grid-cols-2 gap-2">
-                {imageUrls.map((url, index) => (
-                  <div key={index} className="relative">
-                    <img src={url} alt={`菜品图片 ${index + 1}`} className="w-full aspect-square object-cover rounded-lg" />
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="icon"
-                      className="absolute top-1 right-1 h-6 w-6"
-                      onClick={() => setValue("image_urls", imageUrls.filter((_, i) => i !== index))}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
+              <DndContext
+                sensors={imageSensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleImageDragEnd}
+              >
+                <SortableContext
+                  items={imageUrls.map((_, i) => `image-${i}`)}
+                  strategy={rectSortingStrategy}
+                >
+                  <div className="grid grid-cols-2 gap-2">
+                    {imageUrls.map((url, index) => (
+                      <SortableImage
+                        key={`image-${index}`}
+                        url={url}
+                        index={index}
+                        onRemove={(i) => setValue("image_urls", imageUrls.filter((_, idx) => idx !== i))}
+                        disabled={loading}
+                      />
+                    ))}
                   </div>
-                ))}
-              </div>
+                </SortableContext>
+              </DndContext>
             )}
             <ImageUploader onUpload={(url) => setValue("image_urls", [...(getValues("image_urls") || []), url])} disabled={loading} />
           </div>

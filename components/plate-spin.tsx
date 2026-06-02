@@ -405,6 +405,7 @@ export function PlateSpin({ categorizedDishes }: { categorizedDishes: Categorize
                       />
                       <Button
                         render={<Link href={`/menu/${slot.dish!.slug}`} />}
+                        nativeButton={false}
                         variant="ghost"
                         size="sm"
                       >
@@ -429,6 +430,7 @@ export function PlateSpin({ categorizedDishes }: { categorizedDishes: Categorize
             </Button>
             <Button
               render={<Link href="/order" />}
+              nativeButton={false}
               size="lg"
               className="rounded-full px-6 bg-orange-500 hover:bg-orange-600"
             >

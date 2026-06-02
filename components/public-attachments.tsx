@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Loader2, BookOpen, Lock, Eye } from "lucide-react";
 import type { DishAttachment } from "@/lib/dishes/attachment-types";
+import { ImageLightbox } from "@/components/image-lightbox";
 
 type PublicAttachmentsProps = {
   dishId: string;
@@ -12,6 +13,15 @@ type PublicAttachmentsProps = {
 export function PublicAttachments({ dishId, isOwner = false }: PublicAttachmentsProps) {
   const [attachments, setAttachments] = useState<DishAttachment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxImages, setLightboxImages] = useState<string[]>([]);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+
+  const openLightbox = (images: string[], index: number) => {
+    setLightboxImages(images);
+    setLightboxIndex(index);
+    setLightboxOpen(true);
+  };
 
   useEffect(() => {
     const fetchAttachments = async () => {
@@ -111,9 +121,11 @@ export function PublicAttachments({ dishId, isOwner = false }: PublicAttachments
                       : "grid grid-cols-2 gap-3"
                   }>
                     {attachment.image_urls.map((url, index) => (
-                      <div
+                      <button
                         key={index}
-                        className="relative group/img"
+                        type="button"
+                        className="relative group/img cursor-pointer"
+                        onClick={() => openLightbox(attachment.image_urls!, index)}
                       >
                         <div className="absolute -inset-0.5 bg-gradient-to-br from-orange-200 to-amber-200 rounded-xl opacity-0 group-hover/img:opacity-100 transition-opacity duration-300" />
                         <img
@@ -121,7 +133,7 @@ export function PublicAttachments({ dishId, isOwner = false }: PublicAttachments
                           alt={attachment.title || `附录图片 ${index + 1}`}
                           className="relative w-full aspect-square object-cover rounded-xl shadow-md"
                         />
-                      </div>
+                      </button>
                     ))}
                   </div>
                 )}
@@ -130,6 +142,13 @@ export function PublicAttachments({ dishId, isOwner = false }: PublicAttachments
           </div>
         </div>
       </div>
+      <ImageLightbox
+        images={lightboxImages}
+        initialIndex={lightboxIndex}
+        open={lightboxOpen}
+        onClose={() => setLightboxOpen(false)}
+        alt="附录图片"
+      />
     </div>
   );
 }

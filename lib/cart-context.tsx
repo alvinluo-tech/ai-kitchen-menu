@@ -39,8 +39,16 @@ function saveCart(items: CartItem[]) {
 }
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [items, setItems] = useState<CartItem[]>(() => loadCart());
+  const [items, setItems] = useState<CartItem[]>([]);
   const mountedRef = useRef(false);
+
+  // Load from localStorage after mount to avoid SSR hydration mismatch
+  useEffect(() => {
+    const stored = loadCart();
+    if (stored.length > 0) {
+      setItems(stored);
+    }
+  }, []);
 
   useEffect(() => {
     if (mountedRef.current) {

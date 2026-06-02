@@ -34,11 +34,11 @@ export default async function HomePage() {
               告诉 AI 你想吃的味道和手头的食材，它会从真实菜单里帮你挑出最适合的几道。
             </p>
             <div className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-center">
-              <Button render={<Link href="/recommend" />} size="lg" className="gap-2 w-full sm:w-auto">
+              <Button render={<Link href="/recommend" />} nativeButton={false} size="lg" className="gap-2 w-full sm:w-auto">
                 <Sparkles className="h-5 w-5" />
                 让 AI 帮我推荐
               </Button>
-              <Button render={<Link href="/menu" />} size="lg" variant="outline" className="gap-2 w-full sm:w-auto">
+              <Button render={<Link href="/menu" />} nativeButton={false} size="lg" variant="outline" className="gap-2 w-full sm:w-auto">
                 <UtensilsCrossed className="h-5 w-5" />
                 浏览全部菜单
               </Button>
@@ -54,7 +54,7 @@ export default async function HomePage() {
               </h2>
               <DishGrid dishes={recentDishes} />
               <div className="text-center mt-6 md:mt-8">
-                <Button render={<Link href="/menu" />} variant="link" className="gap-1">
+                <Button render={<Link href="/menu" />} nativeButton={false} variant="link" className="gap-1">
                   查看全部菜单
                   <ArrowRight className="h-4 w-4" />
                 </Button>
