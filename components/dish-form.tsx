@@ -24,7 +24,6 @@ import {
   DndContext,
   closestCenter,
   PointerSensor,
-  TouchSensor,
   useSensor,
   useSensors,
   type DragEndEvent,
@@ -96,18 +95,21 @@ function SortableImage({ url, index, onRemove, disabled }: SortableImageProps) {
     <div
       ref={setNodeRef}
       style={style}
-      className="relative group touch-manipulation"
-      {...attributes}
-      {...listeners}
+      className="relative group"
     >
       <img
         src={url}
         alt={`菜品图片 ${index + 1}`}
         className="w-full aspect-square object-cover rounded-lg"
       />
-      <div className="absolute top-1 left-1 p-1 bg-black/50 rounded text-white/80 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+      <button
+        type="button"
+        className="absolute top-1 left-1 p-1.5 bg-black/50 rounded text-white/80 hover:text-white cursor-grab active:cursor-grabbing touch-none"
+        {...attributes}
+        {...listeners}
+      >
         <GripVertical className="h-3 w-3" />
-      </div>
+      </button>
       <Button
         type="button"
         variant="destructive"
@@ -141,12 +143,6 @@ export function DishForm({ dish, mode }: DishFormProps) {
     useSensor(PointerSensor, {
       activationConstraint: {
         distance: 8,
-      },
-    }),
-    useSensor(TouchSensor, {
-      activationConstraint: {
-        delay: 200,
-        tolerance: 5,
       },
     })
   );
